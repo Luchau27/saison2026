@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <!-- ============================================================ -->
+    <!--  META TAGS POUR PWA (iOS + Android)                          -->
+    <!--  Permettent à l'app de s'ouvrir en plein écran une fois      -->
+    <!--  ajoutée à l'écran d'accueil du smartphone.                  -->
+    <!-- ============================================================ -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0e1a">
+    <meta name="description" content="Jeu de piste interactif à Marseille">
+
+    <!-- Tags spécifiques iOS pour le mode plein écran (sans barre Safari) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Marseille Quest">
+
+    <!-- Lien vers le manifest PWA (à placer dans le même dossier) -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Icône PWA pour iOS (optionnelle mais recommandée) -->
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <title>Marseille Quest 🗝️</title>
+
+    <!-- ============================================================ -->
+    <!--  BIBLIOTHÈQUE LEAFLET.JS (cartographie interactive)          -->
+    <!--  Chargée via CDN officiel.                                   -->
+    <!-- ============================================================ -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+
+    <style>
+        /* ============================================================ */
+        /*  RESET & STYLES GLOBAUX                                      */
+        /* ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
+
+        :root {
+            /* Palette de couleurs "espionnage moderne" */
+            --bg-dark: #0a0e1a;
+            --bg-card: #141a2a;
+            --bg-elevated: #1c2438;
+            --accent: #00d9ff;
+            --accent-glow: rgba(0, 217, 255, 0.4);
+            --success: #00ff88;
+            --danger: #ff3860;
+            --warning: #ffb800;
+            --evil: #ff0066;
+            --evil-glow: rgba(255, 0, 102, 0.5);
+            --text-primary: #ffffff;
+            --text-secondary: #8b9bb4;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            /* Support du notch iPhone */
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        /* ============================================================ */
+        /*  ÉCRAN DE CONNEXION                                          */
+        /* ============================================================ */
+        #login-screen {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: radial-gradient(circle at 30% 20%, #1a2238 0%, var(--bg-dark) 60%);
+            z-index: 1000;
+            /* Animation d'apparition */
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .logo {
+            font-size: 56px;
+            margin-bottom: 12px;
+            filter: drop-shadow(0 0 20px var(--accent-glow));
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .login-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--accent), #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+        }
+
+        .login-subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .login-form {
+            width: 100%;
+            max-width: 360px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 16px; /* 16px évite le zoom auto iOS */
+            margin-bottom: 18px;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--accent), #0099cc);
+            border: none;
+            border-radius: 12px;
+            color: #001220;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.97);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ============================================================ */
+        /*  INTERFACE PRINCIPALE (CARTE + HUD)                          */
+        /* ============================================================ */
+        #app-screen {
+            position: fixed;
+            inset: 0;
+            display: none; /* Masqué tant que l'utilisateur n'est pas connecté */
+            flex-direction: column;
+        }
+
+        #app-screen.active {
+            display: flex;
+        }
+
+        /* En-tête / HUD du joueur */
+        .hud {
+            position: absolute;
+            top: env(safe-area-inset-top, 0);
+            left: 0;
+            right: 0;
+            padding: 12px 16px;
+            background: linear-gradient(180deg, rgba(10, 14, 26, 0.95), rgba(10, 14, 26, 0));
+            z-index: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none; /* Permet de cliquer la carte à travers */
+        }
+
+        .hud > * {
+            pointer-events: auto; /* Sauf les éléments du HUD eux-mêmes */
+        }
+
+        .player-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 6px 14px 6px 6px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .player-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #0099cc);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #001220;
+            font-size: 14px;
+        }
+
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .player-name {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .player-role {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        /* Style spécifique pour les "Méchants" */
+        .player-card.evil {
+            border-color: var(--evil);
+            box-shadow: 0 0 20px var(--evil-glow);
+            animation: evilGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes evilGlow {
+            0%, 100% { box-shadow: 0 0 20px var(--evil-glow); }
+            50% { box-shadow: 0 0 30px var(--evil); }
+        }
+
+        .player-card.evil .player-avatar {
+            background: linear-gradient(135deg, var(--evil), #aa0044);
+            color: white;
+        }
+
+        .player-card.evil .player-role {
+            color: var(--evil);
+        }
+
+        /* Compteur de validations */
+        .score-badge {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .score-badge .icon {
+            color: var(--success);
+        }
+
+        /* ============================================================ */
+        /*  CARTE LEAFLET                                               */
+        /* ============================================================ */
+        #map {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+        }
+
+        /* Filigrane Leaflet positionné au-dessus de la barre de statut */
+        .leaflet-control-attribution {
+            background: rgba(10, 14, 26, 0.8) !important;
+            color: var(--text-secondary) !important;
+            font-size: 10px !important;
+        }
+
+        .leaflet-control-attribution a {
+            color: var(--accent) !important;
+        }
+
+        /* Effet visuel "vision étendue" pour les Méchants */
+        .evil-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(circle at center, transparent 30%, rgba(255, 0, 102, 0.08) 80%);
+            z-index: 400;
+            mix-blend-mode: screen;
+        }
+
+        /* ============================================================ */
+        /*  MARQUEURS PERSONNALISÉS                                     */
+        /* ============================================================ */
+        .custom-marker {
+            width: 36px;
+            height: 36px;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            border: 2px solid white;
+        }
+
+        .custom-marker .marker-icon {
+            transform: rotate(45deg);
+            font-size: 18px;
+        }
+
+        .marker-unvalidated {
+            background: linear-gradient(135deg, #ff3860, #aa1030);
+            animation: markerPulse 2s ease-in-out infinite;
+        }
+
+        .marker-validated {
+            background: linear-gradient(135deg, var(--success), #00aa55);
+            animation: none;
+        }
+
+        @keyframes markerPulse {
+            0%, 100% {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 0 0 rgba(255, 56, 96, 0.7);
+            }
+            50% {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 0 16px rgba(255, 56, 96, 0);
+            }
+        }
+
+        /* ============================================================ */
+        /*  MODAL DE VALIDATION DE CODE                                 */
+        /* ============================================================ */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            z-index: 2000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            width: 100%;
+            max-width: 500px;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            border-radius: 24px 24px 0 0;
+            padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0));
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-handle {
+            width: 40px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .modal-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .modal-place-info {
+            background: var(--bg-elevated);
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Champ de saisie du code (gros et tactile) */
+        .code-input {
+            width: 100%;
+            padding: 20px;
+            background: var(--bg-elevated);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            color: var(--text-primary);
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: 8px;
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .code-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px var(--accent-glow);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-secondary {
+            flex: 1;
+            padding: 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:active {
+            transform: scale(0.97);
+        }
+
+        .modal-actions .btn-primary {
+            flex: 1;
+        }
+
+        /* Message d'erreur / succès */
+        .feedback-message {
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .feedback-message.error {
+            background: rgba(255, 56, 96, 0.15);
+            color: var(--danger);
+            display: block;
+            animation: shake 0.4s;
+        }
+
+        .feedback-message.success {
+            background: rgba(0, 255, 136, 0.15);
+            color: var(--success);
+            display: block;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        /* ============================================================ */
+        /*  TOAST DE NOTIFICATION                                       */
+        /* ============================================================ */
+        .toast {
+            position: fixed;
+            top: calc(80px + env(safe-area-inset-top, 0));
+            left: 50%;
+            transform: translateX(-50%) translateY(-200%);
+            background: var(--bg-card);
+            border: 1px solid var(--success);
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 3000;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.success {
+            border-color: var(--success);
+            color: var(--success);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================================ -->
+    <!--  ÉCRAN 1 : CONNEXION                                         -->
+    <!-- ============================================================ -->
+    <div id="login-screen">
+        <div class="logo">🗝️</div>
+        <h1 class="login-title">Marseille Quest</h1>
+        <p class="login-subtitle">Identifiez-vous pour rejoindre la partie</p>
+
+        <div class="login-form">
+            <label class="form-label" for="firstname">Prénom</label>
+            <input type="text" id="firstname" class="form-input" placeholder="Jean" autocomplete="given-name">
+
+            <label class="form-label" for="lastname">Nom</label>
+            <input type="text" id="lastname" class="form-input" placeholder="Dupont" autocomplete="family-name">
+
+            <button id="login-btn" class="btn-primary">🎯 Démarrer la partie</button>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!--  ÉCRAN 2 : JEU (CARTE + HUD)                                 -->
+    <!-- ============================================================ -->
+    <div id="app-screen">
+        <!-- HUD : carte joueur + score -->
+        <div class="hud">
+            <div id="player-card" class="player-card">
+                <div id="player-avatar" class="player-avatar">?</div>
+                <div class="player-info">
+                    <div id="player-name" class="player-name">—</div>
+                    <div id="player-role" class="player-role">—</div>
+                </div>
+            </div>
+
+            <div class="score-badge">
+                <span class="icon">✓</span>
+                <span><span id="score-count">0</span>/<span id="score-total">0</span></span>
+            </div>
+        </div>
+
+        <!-- Conteneur de la carte Leaflet -->
+        <div id="map"></div>
+
+        <!-- Overlay visuel "vision étendue" pour les Méchants -->
+        <div id="evil-overlay" class="evil-overlay" style="display: none;"></div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!--  MODAL : VALIDATION DE CODE SECRET                           -->
+    <!-- ============================================================ -->
+    <div id="code-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-handle"></div>
+            <h2 id="modal-title" class="modal-title">🔐 Code Secret</h2>
+            <p class="modal-subtitle">Entrez le code pour valider ce lieu</p>
+
+            <div id="modal-place-info" class="modal-place-info">
+                <!-- Description du lieu injectée dynamiquement -->
+            </div>
+
+            <div id="feedback" class="feedback-message"></div>
+
+            <input
+                type="text"
+                id="code-input"
+                class="code-input"
+                placeholder="••"
+                maxlength="6"
+                inputmode="numeric"
+                autocomplete="off">
+
+            <div class="modal-actions">
+                <button id="modal-cancel" class="btn-secondary">Annuler</button>
+                <button id="modal-validate" class="btn-primary">Valider</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast de notification -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // ================================================================
+        //  CONFIGURATION DU JEU
+        //  ──────────────────────────────────────────────────────────────
+        //  Tout est centralisé ici pour faciliter l'ajout de contenu.
+        // ================================================================
+
+        /**
+         * BASE DE DONNÉES DES JOUEURS ET RÔLES
+         * Clé : "prenom nom" en minuscules (normalisé)
+         * Valeur : "gentil" ou "mechant"
+         *
+         * 👉 Pour ajouter un joueur, ajoutez simplement une ligne ici.
+         * Toute personne non listée est "gentil" par défaut.
+         */
+        const PLAYERS_DATABASE = {
+            "jean dupont": "gentil",
+            "marie martin": "gentil",
+            "maxime legrand": "mechant",
+            "sophie bernard": "mechant",
+            "lucas petit": "gentil",
+            "claire moreau": "mechant"
+        };
+
+        /**
+         * LISTE DES LIEUX DU JEU DE PISTE
+         *
+         * 👉 Pour ajouter un lieu, dupliquez un objet et adaptez les valeurs :
+         *   - id        : identifiant unique (string)
+         *   - name      : nom affiché
+         *   - lat, lng  : coordonnées GPS
+         *   - code      : code secret à saisir pour valider
+         *   - hint      : indication / description affichée dans le modal
+         *   - icon      : émoji du marqueur
+         */
+        const PLACES = [
+            {
+                id: "bonne-mere",
+                name: "Notre-Dame de la Garde",
+                lat: 43.2839,
+                lng: 5.3712,
+                code: "00",
+                hint: "La Bonne Mère veille sur Marseille depuis sa colline. Quel est le code gravé près de l'entrée ?",
+                icon: "⛪"
+            }
+            // 👇 EXEMPLES À DÉCOMMENTER ET ADAPTER POUR AJOUTER DES LIEUX
+            // {
+            //     id: "vieux-port",
+            //     name: "Le Vieux-Port",
+            //     lat: 43.2956,
+            //     lng: 5.3742,
+            //     code: "1720",
+            //     hint: "Au cœur historique de la cité phocéenne...",
+            //     icon: "⚓"
+            // },
+            // {
+            //     id: "mucem",
+            //     name: "MuCEM",
+            //     lat: 43.2960,
+            //     lng: 5.3608,
+            //     code: "2013",
+            //     hint: "Le musée des civilisations de la Méditerranée...",
+            //     icon: "🏛️"
+            // },
+            // {
+            //     id: "panier",
+            //     name: "Le Panier",
+            //     lat: 43.2987,
+            //     lng: 5.3669,
+            //     code: "600",
+            //     hint: "Le plus vieux quartier de Marseille...",
+            //     icon: "🏘️"
+            // }
+        ];
+
+        /**
+         * PARAMÈTRES DE JEU
+         */
+        const GAME_CONFIG = {
+            // Centre initial de la carte (Marseille)
+            mapCenter: [43.2965, 5.3698],
+            mapZoom: 13,
+
+            // Zoom max et min
+            minZoom: 11,
+            maxZoom: 18,
+
+            // Bonus de vision pour les Méchants (zoom moins serré = ils voient plus)
+            evilZoomBonus: -1,
+
+            // Clés localStorage
+            storageKeys: {
+                user: "marseille_quest_user",
+                validated: "marseille_quest_validated"
+            }
+        };
+
+        // ================================================================
+        //  ÉTAT GLOBAL DU JEU
+        // ================================================================
+        let currentUser = null;          // { firstname, lastname, role }
+        let map = null;                  // Instance Leaflet
+        let markers = {};                // { placeId: marker }
+        let validatedPlaces = new Set(); // Lieux validés par l'utilisateur courant
+        let activePlaceId = null;        // Lieu en cours de validation dans le modal
+
+        // ================================================================
+        //  UTILITAIRES
+        // ================================================================
+
+        /**
+         * Normalise une chaîne pour la comparaison (minuscules + trim)
+         */
+        function normalize(str) {
+            return str.trim().toLowerCase();
+        }
+
+        /**
+         * Détermine le rôle d'un joueur à partir de son prénom et nom
+         */
+        function getPlayerRole(firstname, lastname) {
+            const key = `${normalize(firstname)} ${normalize(lastname)}`;
+            return PLAYERS_DATABASE[key] || "gentil"; // Par défaut : Gentil
+        }
+
+        /**
+         * Récupère un lieu par son ID
+         */
+        function getPlaceById(id) {
+            return PLACES.find(p => p.id === id);
+        }
+
+        /**
+         * Affiche un toast (notification temporaire en haut de l'écran)
+         */
+        function showToast(message, type = "success") {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.classList.remove("show");
+            }, 3000);
+        }
+
+        // ================================================================
+        //  PERSISTANCE (localStorage)
+        // ================================================================
+
+        /**
+         * Sauvegarde l'utilisateur courant
+         */
+        function saveUser(user) {
+            localStorage.setItem(GAME_CONFIG.storageKeys.user, JSON.stringify(user));
+        }
+
+        /**
+         * Récupère l'utilisateur courant (s'il existe)
+         */
+        function loadUser() {
+            const data = localStorage.getItem(GAME_CONFIG.storageKeys.user);
+            return data ? JSON.parse(data) : null;
+        }
+
+        /**
+         * Sauvegarde les lieux validés pour cet utilisateur
+         */
+        function saveValidated() {
+            const userKey = `${currentUser.firstname}_${currentUser.lastname}`.toLowerCase();
+            const key = `${GAME_CONFIG.storageKeys.validated}_${userKey}`;
+            localStorage.setItem(key, JSON.stringify([...validatedPlaces]));
+        }
+
+        /**
+         * Charge les lieux validés pour cet utilisateur
+         */
+        function loadValidated() {
+            const userKey = `${currentUser.firstname}_${currentUser.lastname}`.toLowerCase();
+            const key = `${GAME_CONFIG.storageKeys.validated}_${userKey}`;
+            const data = localStorage.getItem(key);
+            validatedPlaces = new Set(data ? JSON.parse(data) : []);
+        }
+
+        // ================================================================
+        //  ÉCRAN DE CONNEXION
+        // ================================================================
+
+        /**
+         * Gère la soumission du formulaire de connexion
+         */
+        function handleLogin() {
+            const firstname = document.getElementById("firstname").value.trim();
+            const lastname = document.getElementById("lastname").value.trim();
+
+            // Validation : les deux champs sont obligatoires
+            if (!firstname || !lastname) {
+                showToast("⚠️ Renseignez votre prénom ET votre nom", "error");
+                return;
+            }
+
+            // Détermine le rôle via la base de données
+            const role = getPlayerRole(firstname, lastname);
+
+            // Crée l'objet utilisateur
+            currentUser = { firstname, lastname, role };
+            saveUser(currentUser);
+
+            // Démarre l'application
+            startApp();
+        }
+
+        // ================================================================
+        //  DÉMARRAGE DE L'APPLICATION
+        // ================================================================
+
+        /**
+         * Bascule de l'écran de login vers l'écran de jeu
+         */
+        function startApp() {
+            // Masque l'écran de connexion
+            document.getElementById("login-screen").style.display = "none";
+            // Affiche l'écran de jeu
+            document.getElementById("app-screen").classList.add("active");
+
+            // Charge les données utilisateur
+            loadValidated();
+
+            // Met à jour le HUD
+            updatePlayerHUD();
+            updateScore();
+
+            // Initialise la carte (après l'affichage pour des dimensions correctes)
+            setTimeout(initMap, 100);
+        }
+
+        /**
+         * Met à jour la carte joueur dans le HUD
+         */
+        function updatePlayerHUD() {
+            const card = document.getElementById("player-card");
+            const avatar = document.getElementById("player-avatar");
+            const name = document.getElementById("player-name");
+            const role = document.getElementById("player-role");
+
+            // Initiales pour l'avatar
+            const initials = (currentUser.firstname[0] + currentUser.lastname[0]).toUpperCase();
+            avatar.textContent = initials;
+
+            name.textContent = `${currentUser.firstname} ${currentUser.lastname}`;
+
+            // Affichage différencié selon le rôle
+            if (currentUser.role === "mechant") {
+                card.classList.add("evil");
+                role.textContent = "☠️ MÉCHANT";
+                // Active l'overlay visuel rouge
+                document.getElementById("evil-overlay").style.display = "block";
+            } else {
+                card.classList.remove("evil");
+                role.textContent = "🛡️ GENTIL";
+                document.getElementById("evil-overlay").style.display = "none";
+            }
+        }
+
+        /**
+         * Met à jour le compteur de lieux validés
+         */
+        function updateScore() {
+            document.getElementById("score-count").textContent = validatedPlaces.size;
+            document.getElementById("score-total").textContent = PLACES.length;
+        }
+
+        // ================================================================
+        //  INITIALISATION DE LA CARTE LEAFLET
+        // ================================================================
+
+        function initMap() {
+            // Crée la carte centrée sur Marseille
+            // Les Méchants ont un zoom moins serré (vision étendue)
+            const initialZoom = currentUser.role === "mechant"
+                ? GAME_CONFIG.mapZoom + GAME_CONFIG.evilZoomBonus
+                : GAME_CONFIG.mapZoom;
+
+            map = L.map("map", {
+                center: GAME_CONFIG.mapCenter,
+                zoom: initialZoom,
+                minZoom: GAME_CONFIG.minZoom,
+                maxZoom: GAME_CONFIG.maxZoom,
+                zoomControl: false,        // Pas de boutons +/- (UX mobile)
+                attributionControl: true
+            });
+
+            // Fond de carte CartoDB Dark Matter (style "espionnage" moderne, gratuit)
+            L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: "abcd",
+                maxZoom: 20
+            }).addTo(map);
+
+            // Ajoute tous les lieux du jeu
+            PLACES.forEach(addPlaceMarker);
+        }
+
+        /**
+         * Crée un marqueur Leaflet personnalisé pour un lieu
+         */
+        function addPlaceMarker(place) {
+            const isValidated = validatedPlaces.has(place.id);
+
+            // Icône HTML personnalisée (forme de goutte avec emoji)
+            const markerClass = isValidated ? "marker-validated" : "marker-unvalidated";
+            const customIcon = L.divIcon({
+                className: "custom-marker-wrapper",
+                html: `
+                    <div class="custom-marker ${markerClass}">
+                        <span class="marker-icon">${place.icon}</span>
+                    </div>
+                `,
+                iconSize: [36, 36],
+                iconAnchor: [18, 36] // Pointe en bas
+            });
+
+            // Ajoute le marqueur à la carte
+            const marker = L.marker([place.lat, place.lng], { icon: customIcon }).addTo(map);
+
+            // Clic = ouverture du modal de validation
+            marker.on("click", () => {
+                openCodeModal(place.id);
+            });
+
+            markers[place.id] = marker;
+        }
+
+        /**
+         * Met à jour visuellement un marqueur (passage au vert après validation)
+         */
+        function refreshMarker(placeId) {
+            // Supprime l'ancien marqueur
+            if (markers[placeId]) {
+                map.removeLayer(markers[placeId]);
+                delete markers[placeId];
+            }
+            // Recrée le marqueur avec son nouvel état
+            const place = getPlaceById(placeId);
+            if (place) addPlaceMarker(place);
+        }
+
+        // ================================================================
+        //  MODAL DE VALIDATION DE CODE
+        // ================================================================
+
+        /**
+         * Ouvre le modal pour un lieu donné
+         */
+        function openCodeModal(placeId) {
+            const place = getPlaceById(placeId);
+            if (!place) return;
+
+            activePlaceId = placeId;
+
+            // Pré-remplit le titre et l'indice
+            document.getElementById("modal-title").textContent = `${place.icon} ${place.name}`;
+            document.getElementById("modal-place-info").textContent = place.hint;
+
+            // Vide le champ et le focus
+            const input = document.getElementById("code-input");
+            input.value = "";
+            document.getElementById("feedback").className = "feedback-message";
+            document.getElementById("feedback").textContent = "";
+
+            // Si déjà validé, affiche un message
+            if (validatedPlaces.has(placeId)) {
+                showFeedback("✓ Lieu déjà validé !", "success");
+                input.disabled = true;
+                document.getElementById("modal-validate").disabled = true;
+            } else {
+                input.disabled = false;
+                document.getElementById("modal-validate").disabled = false;
+            }
+
+            // Affiche le modal
+            document.getElementById("code-modal").classList.add("active");
+
+            // Focus retardé pour éviter les bugs clavier mobile
+            setTimeout(() => {
+                if (!validatedPlaces.has(placeId)) input.focus();
+            }, 350);
+        }
+
+        /**
+         * Ferme le modal
+         */
+        function closeCodeModal() {
+            document.getElementById("code-modal").classList.remove("active");
+            activePlaceId = null;
+        }
+
+        /**
+         * Affiche un message de feedback dans le modal
+         */
+        function showFeedback(message, type) {
+            const feedback = document.getElementById("feedback");
+            feedback.textContent = message;
+            feedback.className = `feedback-message ${type}`;
+        }
+
+        /**
+         * Tente la validation du code saisi
+         */
+        function validateCode() {
+            if (!activePlaceId) return;
+
+            const place = getPlaceById(activePlaceId);
+            const input = document.getElementById("code-input");
+            const codeEntered = input.value.trim();
+
+            // Vérifie le code (insensible aux espaces)
+            if (codeEntered === place.code) {
+                // ✅ SUCCÈS
+                validatedPlaces.add(activePlaceId);
+                saveValidated();
+
+                showFeedback("🎉 Bravo ! Lieu validé avec succès", "success");
+
+                // Met à jour le marqueur sur la carte (rouge -> vert)
+                refreshMarker(activePlaceId);
+                updateScore();
+
+                // Ferme automatiquement le modal après 1,5s
+                setTimeout(() => {
+                    closeCodeModal();
+                    showToast(`✓ ${place.name} validé !`, "success");
+                }, 1500);
+            } else {
+                // ❌ ÉCHEC
+                showFeedback("✗ Code incorrect, réessayez", "error");
+                input.value = "";
+                input.focus();
+            }
+        }
+
+        // ================================================================
+        //  INITIALISATION DES ÉVÈNEMENTS
+        // ================================================================
+
+        function setupEventListeners() {
+            // Connexion
+            document.getElementById("login-btn").addEventListener("click", handleLogin);
+
+            // Permet aussi de valider la connexion avec "Entrée"
+            ["firstname", "lastname"].forEach(id => {
+                document.getElementById(id).addEventListener("keypress", e => {
+                    if (e.key === "Enter") handleLogin();
+                });
+            });
+
+            // Modal
+            document.getElementById("modal-cancel").addEventListener("click", closeCodeModal);
+            document.getElementById("modal-validate").addEventListener("click", validateCode);
+
+            // Validation au clavier (Entrée dans le champ code)
+            document.getElementById("code-input").addEventListener("keypress", e => {
+                if (e.key === "Enter") validateCode();
+            });
+
+            // Fermeture du modal en cliquant à l'extérieur
+            document.getElementById("code-modal").addEventListener("click", e => {
+                if (e.target.id === "code-modal") closeCodeModal();
+            });
+        }
+
+        // ================================================================
+        //  ENREGISTREMENT DU SERVICE WORKER (inline, blob URL)
+        //  ──────────────────────────────────────────────────────────────
+        //  Service Worker minimaliste : nécessaire pour qu'Android/iOS
+        //  considèrent l'application comme une PWA installable.
+        // ================================================================
+
+        function registerServiceWorker() {
+            if (!("serviceWorker" in navigator)) return;
+
+            // Code source du Service Worker (en string)
+            const swCode = `
+                // SW basique : cache offline du shell
+                const CACHE_NAME = "marseille-quest-v1";
+
+                self.addEventListener("install", event => {
+                    self.skipWaiting();
+                });
+
+                self.addEventListener("activate", event => {
+                    event.waitUntil(clients.claim());
+                });
+
+                self.addEventListener("fetch", event => {
+                    // Stratégie : network-first, fallback cache
+                    event.respondWith(
+                        fetch(event.request)
+                            .then(response => {
+                                // Met en cache les requêtes GET réussies
+                                if (event.request.method === "GET" && response.status === 200) {
+                                    const clone = response.clone();
+                                    caches.open(CACHE_NAME).then(cache => {
+                                        cache.put(event.request, clone);
+                                    });
+                                }
+                                return response;
+                            })
+                            .catch(() => caches.match(event.request))
+                    );
+                });
+            `;
+
+            // Création d'un blob et d'une URL pour le SW
+            const blob = new Blob([swCode], { type: "application/javascript" });
+            const swUrl = URL.createObjectURL(blob);
+
+            navigator.serviceWorker.register(swUrl)
+                .then(() => console.log("✓ Service Worker enregistré"))
+                .catch(err => console.warn("✗ SW non enregistré:", err));
+        }
+
+        // ================================================================
+        //  POINT D'ENTRÉE
+        // ================================================================
+
+        document.addEventListener("DOMContentLoaded", () => {
+            setupEventListeners();
+            registerServiceWorker();
+
+            // Auto-connexion si l'utilisateur s'est déjà identifié
+            const savedUser = loadUser();
+            if (savedUser) {
+                currentUser = savedUser;
+                startApp();
+            }
+        });
+    </script>
+</body>
+</html>
