@@ -1,7 +1,7 @@
 {
-  "name": "Marseille Quest",
-  "short_name": "MarseilleQuest",
-  "description": "Jeu de piste interactif à Marseille",
+  "name": "Saison 2026",
+  "short_name": "Saison2026",
+  "description": "Jeu de piste interactif - Saison 2026",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
