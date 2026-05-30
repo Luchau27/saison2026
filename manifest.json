@@ -1,6 +1,6 @@
 {
   "name": "Saison 2026",
-  "short_name": "Saison2026",
+  "short_name": "Saison 2026",
   "description": "Jeu de piste interactif - Saison 2026",
   "start_url": "./index.html",
   "scope": "./",
