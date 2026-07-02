@@ -394,6 +394,149 @@
             animation: bonusPulse 1.5s ease-in-out infinite;
         }
 
+        /* Marqueur brouillé par le pouvoir Taupe (beaucoup plus gros, contour flou) */
+        .marker-blurred {
+            width: 90px !important;
+            height: 90px !important;
+            filter: blur(1.5px);
+            opacity: 0.85;
+        }
+
+        .marker-blurred .marker-icon {
+            font-size: 42px !important;
+        }
+
+        /* ============================================================ */
+        /*  BANDEAU POUVOIRS ACTIFS (visible de tous)                   */
+        /* ============================================================ */
+        .power-banner {
+            position: absolute;
+            top: calc(78px + env(safe-area-inset-top, 0));
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 600;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            align-items: center;
+            width: max-content;
+            max-width: 90%;
+        }
+
+        .power-banner.active {
+            display: flex;
+        }
+
+        .power-pill {
+            background: rgba(20, 26, 42, 0.94);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 700;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            white-space: nowrap;
+        }
+
+        .power-pill.block {
+            color: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .power-pill.blur {
+            color: var(--warning);
+            border-color: var(--warning);
+        }
+
+        /* ============================================================ */
+        /*  PANNEAU MODE TAUPE                                          */
+        /* ============================================================ */
+        .taupe-powers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .taupe-power-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+        }
+
+        .taupe-power-btn:active {
+            transform: scale(0.97);
+        }
+
+        .taupe-power-btn .power-icon {
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .taupe-power-btn .power-text {
+            flex: 1;
+        }
+
+        .taupe-power-btn .power-desc {
+            display: block;
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
+        .taupe-power-btn:disabled,
+        .taupe-power-btn.used {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .taupe-track-status {
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.15), rgba(0, 217, 255, 0.05));
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent);
+            text-align: center;
+        }
+
+        .taupe-blur-picker {
+            margin-top: 16px;
+        }
+
+        .taupe-blur-place-btn {
+            display: block;
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 8px;
+            text-align: left;
+        }
+
+        .taupe-blur-place-btn:active {
+            transform: scale(0.97);
+        }
+
         @keyframes markerPulse {
             0%, 100% { box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 0 0 rgba(255, 56, 96, 0.7); }
             50% { box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 0 16px rgba(255, 56, 96, 0); }
@@ -849,6 +992,9 @@
             </div>
         </div>
 
+        <!-- Bandeau pouvoirs actifs (blocage codes / point brouillé) -->
+        <div id="power-banner" class="power-banner"></div>
+
         <div id="map"></div>
 
         <!-- Score en bas -->
@@ -933,6 +1079,31 @@
 
     <div id="toast" class="toast"></div>
 
+    <!-- ============================================================ -->
+    <!--  PANNEAU : MODE TAUPE (pouvoirs spéciaux)                    -->
+    <!--  N'apparaît que lorsque la Taupe secoue le téléphone         -->
+    <!-- ============================================================ -->
+    <div id="taupe-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-handle"></div>
+            <h2 class="modal-title">🕵️ Mode Taupe</h2>
+            <p class="modal-subtitle">Les lieux secrets sont révélés sur la carte. Chaque pouvoir n'est utilisable qu'une seule fois !</p>
+
+            <div id="taupe-track-status" class="taupe-track-status" style="display:none;"></div>
+
+            <div id="taupe-powers-list" class="taupe-powers-list"></div>
+
+            <div id="taupe-blur-picker" class="taupe-blur-picker" style="display:none;">
+                <p class="modal-subtitle" style="margin-bottom:10px;">Quel point veux-tu brouiller ?</p>
+                <div id="taupe-blur-places"></div>
+            </div>
+
+            <div class="modal-actions" style="margin-top:16px;">
+                <button id="taupe-close" class="btn-secondary" style="width:100%;">Fermer</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ╔════════════════════════════════════════════════════════════╗
         // ║  CONFIGURATION FIREBASE                                     ║
@@ -959,28 +1130,24 @@
         // ╚════════════════════════════════════════════════════════════╝
         const PLAYERS_DATABASE = {
             // Équipe 1
-            "camille":   { team: 1, role: "joueur" },
-            "hugo":      { team: 1, role: "joueur" },
-            "william":   { team: 1, role: "taupe"  },
-            "mathis":    { team: 1, role: "joueur" },
+            "clara":     { team: 1, role: "joueur" },
+            "bilal":     { team: 1, role: "joueur" },
+            "teddy":     { team: 1, role: "joueur" },
 
             // Équipe 2
             "coline":    { team: 2, role: "joueur" },
-            "matthieu":  { team: 2, role: "joueur" },
-            "eloi":      { team: 2, role: "joueur" },
-            "anthony":   { team: 2, role: "taupe"  },
+            "william":   { team: 2, role: "taupe"  },
+            "mathis":    { team: 2, role: "joueur" },
 
             // Équipe 3
-            "clara":     { team: 3, role: "joueur" },
-            "antonin":   { team: 3, role: "joueur" },
-            "mateo":     { team: 3, role: "joueur" },
-            "teddy":     { team: 3, role: "taupe"  },
+            "elodie":    { team: 3, role: "joueur" },
+            "romain":    { team: 3, role: "joueur" },
+            "anthony":   { team: 3, role: "taupe"  },
 
             // Équipe 4
-            "estelle":   { team: 4, role: "joueur" },
-            "elodie":    { team: 4, role: "taupe"  },
-            "henry":     { team: 4, role: "joueur" },
-            "bilal":     { team: 4, role: "joueur" },
+            "karl":      { team: 4, role: "taupe"  },
+            "clement":   { team: 4, role: "joueur" },
+            "hugo":      { team: 4, role: "joueur" },
 
             // Admin
             "luc":       { team: 0, role: "admin", lastname: "chaudadis" }
@@ -998,64 +1165,64 @@
         // ╚════════════════════════════════════════════════════════════╝
         const PLACES = [
             {
-                id: "bonne-mere",
-                name: "Notre-Dame de la Garde",
-                lat: 43.2839,
-                lng: 5.3712,
+                id: "point-1",
+                name: "Point 1",
+                lat: 43.594640,
+                lng: 7.029421,
                 code: "0000",
-                hint: "La Bonne Mère veille sur Marseille depuis sa colline.",
-                icon: "⛪",
+                hint: "Premier lieu à découvrir.",
+                icon: "📍",
                 bonus: false
             },
             {
-                id: "vieux-port",
-                name: "Le Vieux-Port",
-                lat: 43.2956,
-                lng: 5.3742,
+                id: "point-2",
+                name: "Point 2",
+                lat: 43.596366,
+                lng: 7.023925,
                 code: "0000",
-                hint: "Au cœur historique de la cité phocéenne, là où tout a commencé.",
-                icon: "⚓",
+                hint: "Deuxième lieu à découvrir.",
+                icon: "📍",
                 bonus: false
             },
             {
-                id: "mucem",
-                name: "MuCEM",
-                lat: 43.2960,
-                lng: 5.3608,
+                id: "point-3",
+                name: "Point 3",
+                lat: 43.597970,
+                lng: 7.010736,
                 code: "0000",
-                hint: "Le musée des civilisations de la Méditerranée, à l'entrée du port.",
-                icon: "🏛️",
+                hint: "Troisième lieu à découvrir.",
+                icon: "📍",
                 bonus: false
             },
             {
-                id: "panier",
-                name: "Le Panier",
-                lat: 43.2987,
-                lng: 5.3669,
+                id: "point-4",
+                name: "Point 4",
+                lat: 43.599850,
+                lng: 7.027657,
                 code: "0000",
-                hint: "Le plus vieux quartier de Marseille, ses ruelles colorées.",
-                icon: "🏘️",
+                hint: "Quatrième lieu à découvrir.",
+                icon: "📍",
                 bonus: false
             },
             // Lieux BONUS visibles uniquement par les Taupes (en secouant le téléphone)
             {
-                id: "chateau-if",
-                name: "Château d'If",
-                lat: 43.2796,
-                lng: 5.3257,
+                id: "point-taupe-1",
+                name: "Point secret 1",
+                lat: 43.598233,
+                lng: 7.011119,
                 code: "0000",
-                hint: "L'île-prison du célèbre roman d'Alexandre Dumas. 🤫 Lieu secret de Taupe.",
-                icon: "🏰",
+                hint: "🤫 Lieu secret de Taupe.",
+                icon: "🕳️",
                 bonus: true
             },
             {
-                id: "calanques",
-                name: "Calanques de Sormiou",
-                lat: 43.2125,
-                lng: 5.4131,
+                id: "point-taupe-2",
+                name: "Point secret 2",
+                lat: 43.600025,
+                lng: 7.028483,
                 code: "0000",
-                hint: "Criques sauvages au sud de Marseille. 🤫 Lieu secret de Taupe.",
-                icon: "🌊",
+                hint: "🤫 Lieu secret de Taupe.",
+                icon: "🕳️",
                 bonus: true
             }
         ];
@@ -1064,9 +1231,9 @@
         // ║  PARAMÈTRES DE JEU                                          ║
         // ╚════════════════════════════════════════════════════════════╝
         const GAME_CONFIG = {
-            mapCenter: [43.2965, 5.3698],
-            mapZoom: 13,
-            minZoom: 10,
+            mapCenter: [43.5972, 7.0224],
+            mapZoom: 15,
+            minZoom: 12,
             maxZoom: 18,
             // Seuil de détection de secousse (plus haut = plus difficile à déclencher)
             shakeThreshold: 25,
@@ -1074,7 +1241,13 @@
             shakeCooldown: 3000,
             // Délai d'envoi de la position GPS à Firebase (ms)
             locationUpdateInterval: 5000,
-            storageKey: "saison2026_user"
+            storageKey: "saison2026_user",
+            // Durées des pouvoirs des Taupes (ms)
+            powerDurations: {
+                block: 5 * 60 * 1000,
+                blur: 5 * 60 * 1000,
+                track: 15 * 60 * 1000
+            }
         };
 
         // ╔════════════════════════════════════════════════════════════╗
@@ -1091,6 +1264,11 @@
         let bonusPlacesRevealed = false; // Pour les Taupes après secouage
         let firebaseListeners = [];      // Pour cleanup
         let locationWatchId = null;
+        let activePowers = {};           // Dernier état /powers depuis Firebase
+        let powersUsedByMe = {};         // Pouvoirs déjà utilisés par la Taupe connectée
+        let taupeModeActive = false;     // Panneau Taupe affiché (après secouage)
+        let powersTickInterval = null;   // Rafraîchit les sabliers chaque seconde
+        let otherPlayersTrackingActive = false; // Suivi des joueurs actif sur la carte
 
         // ╔════════════════════════════════════════════════════════════╗
         // ║  UTILITAIRES                                                ║
@@ -1207,6 +1385,14 @@
             viewedUser = null;
             validatedPlaces.clear();
             bonusPlacesRevealed = false;
+            activePowers = {};
+            powersUsedByMe = {};
+            taupeModeActive = false;
+            otherPlayersTrackingActive = false;
+            stopPowersTicker();
+            document.getElementById("taupe-modal").classList.remove("active");
+            document.getElementById("power-banner").classList.remove("active");
+            document.getElementById("power-banner").innerHTML = "";
 
             // Vide le localStorage
             localStorage.removeItem(GAME_CONFIG.storageKey);
@@ -1260,6 +1446,13 @@
             if (currentUser.role === "taupe" || currentUser.role === "admin") {
                 initShakeDetection();
             }
+
+            // Pouvoirs des Taupes : écoute l'état global + les pouvoirs déjà utilisés
+            attachPowersListener();
+            if (currentUser.role === "taupe") {
+                attachPowersUsedListener();
+            }
+            startPowersTicker();
 
             // Surveille la connexion Firebase
             attachConnectionListener();
@@ -1378,7 +1571,7 @@
             }).addTo(map);
 
             refreshAllMarkers();
-            attachOtherPlayersListener();
+            updateTrackingState();
         }
 
         /**
@@ -1406,11 +1599,16 @@
                 markerClass = "marker-unvalidated";
             }
 
+            // Pouvoir Taupe "Brouiller" : ce point est affiché beaucoup plus gros
+            const isBlurred = isPowerActive("blur") && activePowers.blur.placeId === place.id;
+            if (isBlurred) markerClass += " marker-blurred";
+            const size = isBlurred ? 90 : 36;
+
             const customIcon = L.divIcon({
                 className: "custom-marker-wrapper",
                 html: `<div class="custom-marker ${markerClass}"><span class="marker-icon">${place.icon}</span></div>`,
-                iconSize: [36, 36],
-                iconAnchor: [18, 36]
+                iconSize: [size, size],
+                iconAnchor: [size / 2, size]
             });
 
             const marker = L.marker([place.lat, place.lng], { icon: customIcon }).addTo(map);
@@ -1492,13 +1690,15 @@
         }
 
         /**
-         * Écoute les positions des autres joueurs (admin uniquement, pour le moment)
-         * Note : pour la confidentialité, les joueurs ne voient pas la position des autres.
-         * Seul l'admin voit toutes les positions.
+         * Écoute les positions des autres joueurs.
+         * - L'admin les voit toujours.
+         * - Une Taupe les voit uniquement pendant que son pouvoir "Repérer" est actif
+         *   ET que le mode Taupe (secouage) est ouvert.
          */
         function attachOtherPlayersListener() {
-            // Pour l'instant : seul l'admin voit les autres joueurs
-            if (currentUser.role !== "admin") return;
+            const allowed = currentUser.role === "admin" ||
+                (currentUser.role === "taupe" && isPowerActive("track") && taupeModeActive);
+            if (!allowed) return;
 
             const ref = db.ref("players");
             const cb = snapshot => {
@@ -1506,7 +1706,40 @@
                 updateOtherPlayersOnMap(players);
             };
             ref.on("value", cb);
-            firebaseListeners.push({ ref, event: "value", cb });
+            firebaseListeners.push({ ref, event: "value", cb, tag: "otherPlayers" });
+        }
+
+        /**
+         * Coupe le suivi des autres joueurs (utilisé quand le pouvoir Taupe expire
+         * ou que le mode Taupe se referme)
+         */
+        function detachOtherPlayersListener() {
+            firebaseListeners = firebaseListeners.filter(l => {
+                if (l.tag === "otherPlayers") {
+                    l.ref.off(l.event, l.cb);
+                    return false;
+                }
+                return true;
+            });
+            Object.values(otherPlayersMarkers).forEach(m => map && map.removeLayer(m));
+            otherPlayersMarkers = {};
+        }
+
+        /**
+         * Active/désactive le suivi des autres joueurs selon le rôle et l'état des pouvoirs
+         */
+        function updateTrackingState() {
+            if (!currentUser) return;
+            const shouldTrack = currentUser.role === "admin" ||
+                (currentUser.role === "taupe" && isPowerActive("track") && taupeModeActive);
+
+            if (shouldTrack && !otherPlayersTrackingActive) {
+                otherPlayersTrackingActive = true;
+                attachOtherPlayersListener();
+            } else if (!shouldTrack && otherPlayersTrackingActive) {
+                otherPlayersTrackingActive = false;
+                detachOtherPlayersListener();
+            }
         }
 
         function updateOtherPlayersOnMap(players) {
@@ -1597,16 +1830,19 @@
         }
 
         function onShakeDetected() {
-            if (bonusPlacesRevealed) {
-                // Déjà révélé : on cache à nouveau
-                bonusPlacesRevealed = false;
-                refreshAllMarkers();
-                showToast("🤫 Lieux secrets masqués", "success");
-            } else {
-                // Révèle les bonus
-                bonusPlacesRevealed = true;
-                refreshAllMarkers();
+            taupeModeActive = !taupeModeActive;
+            bonusPlacesRevealed = taupeModeActive;
+            refreshAllMarkers();
+            updateTrackingState();
+
+            if (taupeModeActive) {
                 showToast("🤫 Lieux secrets révélés ! Secouez à nouveau pour masquer.", "bonus");
+                if (currentUser.role === "taupe") {
+                    openTaupeModal();
+                }
+            } else {
+                showToast("🤫 Lieux secrets masqués", "success");
+                closeTaupeModal();
             }
         }
 
@@ -1638,6 +1874,10 @@
                 showFeedback("👁️ Mode test : validation désactivée", "success");
                 input.disabled = true;
                 document.getElementById("modal-validate").disabled = true;
+            } else if (isPowerActive("block")) {
+                showFeedback(`🔒 Bloqué par une Taupe — ⏳ ${formatDuration(activePowers.block.until - Date.now())}`, "error");
+                input.disabled = true;
+                document.getElementById("modal-validate").disabled = true;
             } else {
                 input.disabled = false;
                 document.getElementById("modal-validate").disabled = false;
@@ -1664,6 +1904,11 @@
         function validateCode() {
             if (!activePlaceId || !currentUser) return;
 
+            if (isPowerActive("block")) {
+                showFeedback(`🔒 Bloqué par une Taupe — ⏳ ${formatDuration(activePowers.block.until - Date.now())}`, "error");
+                return;
+            }
+
             const place = getPlaceById(activePlaceId);
             const input = document.getElementById("code-input");
             const codeEntered = input.value.trim();
@@ -1685,6 +1930,226 @@
                 showFeedback("✗ Code incorrect, réessayez", "error");
                 input.value = "";
                 input.focus();
+            }
+        }
+
+        // ╔════════════════════════════════════════════════════════════╗
+        // ║  POUVOIRS DES TAUPES                                        ║
+        // ║  ─────────────────────────────────────────────              ║
+        // ║  Chaque pouvoir n'est utilisable qu'UNE FOIS par Taupe.      ║
+        // ║  Si plusieurs Taupes l'activent en même temps, la durée      ║
+        // ║  se cumule (transaction Firebase sur /powers/<type>).        ║
+        // ╚════════════════════════════════════════════════════════════╝
+
+        const POWER_DEFS = [
+            {
+                type: "block",
+                icon: "🔒",
+                title: "Bloquer les codes",
+                desc: "Empêche TOUT LE MONDE de valider un code pendant 5 min. Visible de tous."
+            },
+            {
+                type: "blur",
+                icon: "🌫️",
+                title: "Brouiller un point",
+                desc: "Agrandit un point sur la carte pendant 5 min pour brouiller sa position exacte. Visible de tous."
+            },
+            {
+                type: "track",
+                icon: "📍",
+                title: "Repérer les joueurs",
+                desc: "Affiche ici la position de tous les joueurs (géoloc activée) pendant 15 min. Visible des Taupes uniquement."
+            }
+        ];
+
+        function formatDuration(ms) {
+            const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+            const m = Math.floor(totalSeconds / 60);
+            const s = totalSeconds % 60;
+            return `${m}:${s.toString().padStart(2, "0")}`;
+        }
+
+        function isPowerActive(type) {
+            const p = activePowers[type];
+            return !!(p && p.until && p.until > Date.now());
+        }
+
+        /**
+         * Écoute l'état global des pouvoirs (visible par tout le monde)
+         */
+        function attachPowersListener() {
+            const ref = db.ref("powers");
+            const cb = snapshot => {
+                activePowers = snapshot.val() || {};
+                renderPowerBanner();
+                refreshAllMarkers();
+                updateTrackingState();
+                if (document.getElementById("taupe-modal").classList.contains("active")) {
+                    renderTaupePanel();
+                }
+            };
+            ref.on("value", cb);
+            firebaseListeners.push({ ref, event: "value", cb });
+        }
+
+        /**
+         * Écoute les pouvoirs déjà utilisés par la Taupe connectée
+         */
+        function attachPowersUsedListener() {
+            const ref = db.ref(`players/${currentUser.key}/powersUsed`);
+            const cb = snapshot => {
+                powersUsedByMe = snapshot.val() || {};
+                if (document.getElementById("taupe-modal").classList.contains("active")) {
+                    renderTaupePanel();
+                }
+            };
+            ref.on("value", cb);
+            firebaseListeners.push({ ref, event: "value", cb });
+        }
+
+        function startPowersTicker() {
+            stopPowersTicker();
+            powersTickInterval = setInterval(() => {
+                renderPowerBanner();
+                updateTrackingState();
+                if (document.getElementById("taupe-modal").classList.contains("active")) {
+                    renderTaupeTrackStatus();
+                }
+            }, 1000);
+        }
+
+        function stopPowersTicker() {
+            if (powersTickInterval) {
+                clearInterval(powersTickInterval);
+                powersTickInterval = null;
+            }
+        }
+
+        /**
+         * Bandeau visible de TOUS les joueurs : blocage codes + point brouillé
+         */
+        function renderPowerBanner() {
+            const banner = document.getElementById("power-banner");
+            if (!banner) return;
+            const now = Date.now();
+            let html = "";
+
+            if (activePowers.block && activePowers.block.until > now) {
+                html += `<div class="power-pill block">🔒 Codes bloqués — ⏳ ${formatDuration(activePowers.block.until - now)}</div>`;
+            }
+            if (activePowers.blur && activePowers.blur.until > now) {
+                const place = getPlaceById(activePowers.blur.placeId);
+                html += `<div class="power-pill blur">🌫️ ${place ? place.name : "Un point"} brouillé — ⏳ ${formatDuration(activePowers.blur.until - now)}</div>`;
+            }
+
+            banner.innerHTML = html;
+            banner.classList.toggle("active", html !== "");
+        }
+
+        /**
+         * Active un pouvoir (une seule fois par Taupe). La durée se cumule
+         * si plusieurs Taupes activent le même pouvoir simultanément.
+         */
+        function activatePower(type, extra) {
+            if (!currentUser || currentUser.role !== "taupe") return;
+            if (powersUsedByMe[type]) {
+                showToast("⚠️ Tu as déjà utilisé ce pouvoir", "error");
+                return;
+            }
+
+            const duration = GAME_CONFIG.powerDurations[type];
+
+            db.ref(`powers/${type}`).transaction(current => {
+                const now = Date.now();
+                const currentUntil = (current && current.until && current.until > now) ? current.until : now;
+                const newUntil = currentUntil + duration;
+                return type === "blur" ? { placeId: extra, until: newUntil } : { until: newUntil };
+            }).then(result => {
+                if (!result.committed) return;
+                db.ref(`players/${currentUser.key}/powersUsed/${type}`).set(true);
+                const labels = {
+                    block: "🔒 Blocage des codes activé !",
+                    blur: "🌫️ Point brouillé !",
+                    track: "📍 Repérage des joueurs activé !"
+                };
+                showToast(labels[type] || "✅ Pouvoir activé", "success");
+                document.getElementById("taupe-blur-picker").style.display = "none";
+                renderTaupePanel();
+            }).catch(err => {
+                showToast("❌ Erreur : " + err.message, "error");
+            });
+        }
+
+        /**
+         * Ouvre le panneau Mode Taupe (uniquement au secouage, cf. onShakeDetected)
+         */
+        function openTaupeModal() {
+            renderTaupePanel();
+            document.getElementById("taupe-modal").classList.add("active");
+        }
+
+        function closeTaupeModal() {
+            document.getElementById("taupe-modal").classList.remove("active");
+            document.getElementById("taupe-blur-picker").style.display = "none";
+        }
+
+        function renderTaupePanel() {
+            renderTaupePowersList();
+            renderTaupeTrackStatus();
+        }
+
+        function renderTaupePowersList() {
+            const container = document.getElementById("taupe-powers-list");
+            if (!container) return;
+
+            container.innerHTML = POWER_DEFS.map(p => {
+                const used = !!powersUsedByMe[p.type];
+                return `
+                    <button class="taupe-power-btn ${used ? "used" : ""}" data-power="${p.type}" ${used ? "disabled" : ""}>
+                        <span class="power-icon">${used ? "✅" : p.icon}</span>
+                        <span class="power-text">
+                            ${p.title}
+                            <span class="power-desc">${used ? "Déjà utilisé" : p.desc}</span>
+                        </span>
+                    </button>
+                `;
+            }).join("");
+
+            container.querySelectorAll(".taupe-power-btn").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const type = btn.dataset.power;
+                    if (type === "blur") {
+                        openBlurPicker();
+                    } else {
+                        activatePower(type);
+                    }
+                });
+            });
+        }
+
+        function openBlurPicker() {
+            const picker = document.getElementById("taupe-blur-picker");
+            const list = document.getElementById("taupe-blur-places");
+            list.innerHTML = getMainPlaces().map(place => `
+                <button class="taupe-blur-place-btn" data-place="${place.id}">${place.icon} ${place.name}</button>
+            `).join("");
+            list.querySelectorAll(".taupe-blur-place-btn").forEach(btn => {
+                btn.addEventListener("click", () => activatePower("blur", btn.dataset.place));
+            });
+            picker.style.display = "block";
+        }
+
+        /**
+         * Sablier "Repérage des joueurs" : visible des Taupes uniquement, dans leur panneau
+         */
+        function renderTaupeTrackStatus() {
+            const el = document.getElementById("taupe-track-status");
+            if (!el) return;
+            if (isPowerActive("track")) {
+                el.textContent = `📍 Repérage des joueurs actif — ⏳ ${formatDuration(activePowers.track.until - Date.now())}`;
+                el.style.display = "block";
+            } else {
+                el.style.display = "none";
             }
         }
 
@@ -1914,6 +2379,12 @@
             document.getElementById("admin-close").addEventListener("click", closeAdminModal);
             document.getElementById("reset-game-btn").addEventListener("click", resetGame);
             document.getElementById("impersonate-exit").addEventListener("click", exitImpersonate);
+
+            // Mode Taupe (pouvoirs)
+            document.getElementById("taupe-close").addEventListener("click", closeTaupeModal);
+            document.getElementById("taupe-modal").addEventListener("click", e => {
+                if (e.target.id === "taupe-modal") closeTaupeModal();
+            });
 
             // Tabs admin
             document.querySelectorAll(".admin-tab").forEach(tab => {
