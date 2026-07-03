@@ -363,10 +363,9 @@
         /*  MARQUEURS PERSONNALISÉS                                     */
         /* ============================================================ */
         .custom-marker {
-            width: 36px;
-            height: 36px;
-            border-radius: 50% 50% 50% 0;
-            transform: rotate(-45deg);
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -375,8 +374,7 @@
         }
 
         .custom-marker .marker-icon {
-            transform: rotate(45deg);
-            font-size: 18px;
+            font-size: 17px;
         }
 
         .marker-unvalidated {
@@ -394,16 +392,21 @@
             animation: bonusPulse 1.5s ease-in-out infinite;
         }
 
-        /* Marqueur brouillé par le pouvoir Taupe (beaucoup plus gros, contour flou) */
+        /* Icône du point brouillé par le pouvoir Taupe (la zone autour, elle, double de diamètre) */
         .marker-blurred {
-            width: 90px !important;
-            height: 90px !important;
-            filter: blur(1.5px);
-            opacity: 0.85;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 0 6px rgba(255, 184, 0, 0.25);
+            animation: blurredPulse 1.8s ease-in-out infinite;
         }
 
-        .marker-blurred .marker-icon {
-            font-size: 42px !important;
+        @keyframes blurredPulse {
+            0%, 100% { box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 0 6px rgba(255, 184, 0, 0.25); }
+            50% { box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 0 16px rgba(255, 184, 0, 0.05); }
+        }
+
+        /* Cercles de zone de recherche (dessinés par Leaflet en SVG, pointillés pour les non-validés) */
+        .zone-unvalidated path,
+        .zone-bonus path {
+            stroke-dasharray: 6, 6;
         }
 
         /* ============================================================ */
@@ -452,6 +455,30 @@
         /* ============================================================ */
         /*  PANNEAU MODE TAUPE                                          */
         /* ============================================================ */
+        /* ============================================================ */
+        /*  PANNEAU MODE TAUPE — mise en avant visuelle                 */
+        /* ============================================================ */
+        #taupe-modal .modal {
+            border: 1px solid var(--gold);
+            box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.15), 0 -8px 40px rgba(255, 215, 0, 0.15), 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        #taupe-modal .modal-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #taupe-modal .modal-title::after {
+            content: "";
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--gold);
+            animation: bonusPulse 1.5s ease-in-out infinite;
+            margin-left: auto;
+        }
+
         .taupe-powers-list {
             display: flex;
             flex-direction: column;
@@ -500,6 +527,55 @@
         .taupe-power-btn.used {
             opacity: 0.45;
             cursor: not-allowed;
+        }
+
+        .taupe-chat-messages {
+            max-height: 300px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding-right: 4px;
+        }
+
+        .taupe-chat-msg {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 14px;
+        }
+
+        .taupe-chat-msg .sender {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .taupe-chat-msg .text {
+            font-size: 14px;
+            color: var(--text-primary);
+            word-break: break-word;
+        }
+
+        .taupe-chat-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .taupe-chat-input-row .form-input {
+            margin-bottom: 0;
+            flex: 1;
+        }
+
+        .taupe-chat-input-row .btn-primary {
+            width: auto;
+            padding: 14px 20px;
+            white-space: nowrap;
         }
 
         .taupe-track-status {
@@ -643,6 +719,7 @@
             font-size: 14px;
             color: var(--text-secondary);
             line-height: 1.5;
+            white-space: pre-line;
         }
 
         .code-input {
@@ -960,9 +1037,12 @@
             <label class="form-label" for="lastname">Nom</label>
             <input type="text" id="lastname" class="form-input" placeholder="Votre nom" autocomplete="family-name">
 
+            <label class="form-label" for="secret-code">Code secret</label>
+            <input type="text" id="secret-code" class="form-input" placeholder="••••" maxlength="4" inputmode="numeric" autocomplete="off">
+
             <button id="login-btn" class="btn-primary">🚀 Démarrer</button>
 
-            <p class="login-help">Utilisez le prénom et nom communiqués par l'organisateur</p>
+            <p class="login-help">Utilisez le prénom, nom et code secret communiqués par l'organisateur</p>
         </div>
     </div>
 
@@ -988,6 +1068,7 @@
 
             <div class="hud-buttons">
                 <button id="admin-btn" class="hud-btn admin" style="display:none;">👑</button>
+                <button id="vote-btn" class="hud-btn" style="display:none;" title="Voter contre un suspect">🗳️</button>
                 <button id="logout-btn" class="hud-btn">🚪</button>
             </div>
         </div>
@@ -1057,6 +1138,9 @@
                 <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">
                     Sélectionnez un joueur pour voir le jeu comme lui (lecture seule).
                 </p>
+                <button id="admin-taupe-vision-btn" class="btn-secondary" style="width:100%;margin-bottom:16px;">
+                    🕵️ Activer la vision Taupe (sans secouer)
+                </button>
                 <div id="impersonate-list"></div>
             </div>
 
@@ -1080,6 +1164,67 @@
     <div id="toast" class="toast"></div>
 
     <!-- ============================================================ -->
+    <!--  MODAL : VOTE (démasquer un suspect dans son équipe)         -->
+    <!-- ============================================================ -->
+    <div id="vote-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-handle"></div>
+            <h2 class="modal-title">🗳️ Voter un suspect</h2>
+            <p class="modal-subtitle">Désigne le coéquipier que tu penses être la Taupe.</p>
+
+            <div class="modal-place-info" style="margin-bottom:16px;">
+                ⚠️ <strong>Tu ne peux voter qu'une seule fois par partie</strong>, choisis bien !<br><br>
+                🤫 <strong>Si tu te trompes :</strong> rien ne se passe, aucune pénalité.<br><br>
+                🎯 <strong>Si 2 joueurs innocents de ton équipe désignent la bonne Taupe :</strong> elle est démasquée ! Elle perd alors tous ses pouvoirs et ne pourra plus voir les points spéciaux qu'elle doit trouver — elle ne verra plus que les lieux classiques, comme un joueur normal.
+            </div>
+
+            <div id="vote-list" class="taupe-powers-list"></div>
+
+            <div class="modal-actions" style="margin-top:16px;">
+                <button id="vote-close" class="btn-secondary" style="width:100%;">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!--  MODAL : CHAT DES TAUPES (visible en Mode Taupe uniquement)  -->
+    <!-- ============================================================ -->
+    <div id="taupe-chat-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-handle"></div>
+            <h2 class="modal-title">💬 Chat des Taupes</h2>
+            <p class="modal-subtitle">Messages visibles uniquement par les 3 Taupes.</p>
+
+            <div id="taupe-chat-messages" class="taupe-chat-messages"></div>
+
+            <div class="taupe-chat-input-row">
+                <input type="text" id="taupe-chat-input" class="form-input" placeholder="Écris un message..." maxlength="200" autocomplete="off">
+                <button id="taupe-chat-send" class="btn-primary">Envoyer</button>
+            </div>
+
+            <div class="modal-actions" style="margin-top:16px;">
+                <button id="taupe-chat-close" class="btn-secondary" style="width:100%;">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!--  MODAL : FIN DE PARTIE                                       -->
+    <!-- ============================================================ -->
+    <div id="endgame-modal" class="modal-overlay">
+        <div class="modal" style="text-align:center;">
+            <div class="modal-handle"></div>
+            <h2 id="endgame-title" class="modal-title" style="font-size:26px;">🎉 Partie terminée !</h2>
+            <div id="endgame-body" style="font-size:15px;line-height:1.6;color:var(--text-primary);margin:10px 0 20px;"></div>
+
+            <div class="modal-actions">
+                <button id="endgame-close" class="btn-secondary" style="width:100%;">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ============================================================ -->
     <!--  PANNEAU : MODE TAUPE (pouvoirs spéciaux)                    -->
     <!--  N'apparaît que lorsque la Taupe secoue le téléphone         -->
     <!-- ============================================================ -->
@@ -1088,8 +1233,6 @@
             <div class="modal-handle"></div>
             <h2 class="modal-title">🕵️ Mode Taupe</h2>
             <p class="modal-subtitle">Les lieux secrets sont révélés sur la carte. Chaque pouvoir n'est utilisable qu'une seule fois !</p>
-
-            <div id="taupe-track-status" class="taupe-track-status" style="display:none;"></div>
 
             <div id="taupe-powers-list" class="taupe-powers-list"></div>
 
@@ -1130,27 +1273,27 @@
         // ╚════════════════════════════════════════════════════════════╝
         const PLAYERS_DATABASE = {
             // Équipe 1
-            "clara":     { team: 1, role: "joueur" },
-            "bilal":     { team: 1, role: "joueur" },
-            "teddy":     { team: 1, role: "joueur" },
+            "clara":     { team: 1, role: "joueur", code: "4489" },
+            "bilal":     { team: 1, role: "joueur", code: "3454" },
+            "teddy":     { team: 1, role: "joueur", code: "7180" },
 
             // Équipe 2
-            "coline":    { team: 2, role: "joueur" },
-            "william":   { team: 2, role: "taupe"  },
-            "mathis":    { team: 2, role: "joueur" },
+            "coline":    { team: 2, role: "joueur", code: "8581" },
+            "william":   { team: 2, role: "taupe",  code: "7270" },
+            "mathis":    { team: 2, role: "joueur", code: "3191" },
 
             // Équipe 3
-            "elodie":    { team: 3, role: "joueur" },
-            "romain":    { team: 3, role: "joueur" },
-            "anthony":   { team: 3, role: "taupe"  },
+            "elodie":    { team: 3, role: "joueur", code: "1670" },
+            "romain":    { team: 3, role: "joueur", code: "2572" },
+            "anthony":   { team: 3, role: "taupe",  code: "2670" },
 
             // Équipe 4
-            "karl":      { team: 4, role: "taupe"  },
-            "clement":   { team: 4, role: "joueur" },
-            "hugo":      { team: 4, role: "joueur" },
+            "karl":      { team: 4, role: "taupe",  code: "8688" },
+            "clement":   { team: 4, role: "joueur", code: "3497" },
+            "hugo":      { team: 4, role: "joueur", code: "3724" },
 
             // Admin
-            "luc":       { team: 0, role: "admin", lastname: "chaudadis" }
+            "luc":       { team: 0, role: "admin", lastname: "chaudadis", code: "9710" }
         };
 
         // ╔════════════════════════════════════════════════════════════╗
@@ -1171,8 +1314,9 @@
                 lng: 7.0129188,
                 code: "3581",
                 hint: "Dans la peau de romains",
-                icon: "📍",
-                bonus: false
+                icon: "🗑️",
+                bonus: false,
+                radius: 2
             },
             {
                 id: "point-2",
@@ -1181,8 +1325,9 @@
                 lng: 7.0143051,
                 code: "0000",
                 hint: "À proximité des castors",
-                icon: "📍",
-                bonus: false
+                icon: "🦫",
+                bonus: false,
+                radius: 2
             },
             {
                 id: "point-3",
@@ -1191,8 +1336,9 @@
                 lng: 7.0154126,
                 code: "0000",
                 hint: "Suivre le chemin des fourmis",
-                icon: "📍",
-                bonus: false
+                icon: "⚔️",
+                bonus: false,
+                radius: 2
             },
             {
                 id: "point-4",
@@ -1201,8 +1347,9 @@
                 lng: 7.0180599,
                 code: "0000",
                 hint: "Là ou la nature perd ses droits",
-                icon: "📍",
-                bonus: false
+                icon: "🏗️",
+                bonus: false,
+                radius: 2
             },
             {
                 id: "point-5",
@@ -1211,8 +1358,9 @@
                 lng: 7.0193678,
                 code: "0000",
                 hint: "Les mites volent attention en l'air",
-                icon: "📍",
-                bonus: false
+                icon: "🪵",
+                bonus: false,
+                radius: 2
             },
             {
                 id: "point-6",
@@ -1221,8 +1369,9 @@
                 lng: 7.0166377,
                 code: "0000",
                 hint: "Accrochez vous ça va glisser",
-                icon: "📍",
-                bonus: false
+                icon: "⛰️",
+                bonus: false,
+                radius: 2
             },
             // Lieux BONUS visibles uniquement par les Taupes (en secouant le téléphone)
             {
@@ -1232,8 +1381,9 @@
                 lng: 7.0129969,
                 code: "0000",
                 hint: "🤫 Une petite pause s'impose",
-                icon: "🕳️",
-                bonus: true
+                icon: "🍽️",
+                bonus: true,
+                radius: 2
             },
             {
                 id: "point-taupe-2",
@@ -1242,8 +1392,9 @@
                 lng: 7.0180981,
                 code: "0000",
                 hint: "🤫 Attention aux reflets",
-                icon: "🕳️",
-                bonus: true
+                icon: "🪨",
+                bonus: true,
+                radius: 2
             },
             {
                 id: "point-taupe-3",
@@ -1252,8 +1403,9 @@
                 lng: 7.0165820,
                 code: "0000",
                 hint: "🤫 Surplombe la creuvasse",
-                icon: "🕳️",
-                bonus: true
+                icon: "🌋",
+                bonus: true,
+                radius: 2
             }
         ];
 
@@ -1274,10 +1426,13 @@
             storageKey: "saison2026_user",
             // Durées des pouvoirs des Taupes (ms)
             powerDurations: {
-                block: 5 * 60 * 1000,
-                blur: 5 * 60 * 1000,
-                track: 15 * 60 * 1000
-            }
+                block: 3 * 60 * 1000,
+                blur: 5 * 60 * 1000
+            },
+            // Nombre de votes corrects nécessaires (de non-Taupes) pour démasquer une Taupe
+            votesNeededToUnmask: 2,
+            // Nombre total de Taupes dans la partie
+            totalTaupes: 3
         };
 
         // ╔════════════════════════════════════════════════════════════╗
@@ -1299,6 +1454,11 @@
         let taupeModeActive = false;     // Panneau Taupe affiché (après secouage)
         let powersTickInterval = null;   // Rafraîchit les sabliers chaque seconde
         let otherPlayersTrackingActive = false; // Suivi des joueurs actif sur la carte
+        let unmaskedTaupes = {};         // { taupeKey: true } - Taupes démasquées
+        let votesData = {};              // Votes de l'équipe du joueur courant { voterKey: targetKey }
+        let allPlayersData = {};         // Cache complet /players (validated only usage) pour conditions de victoire
+        let gameResult = null;           // Résultat final de la partie (une fois déterminé)
+        let adminForcedTaupeVision = false; // Vision Taupe forcée par l'admin (bouton, sans secouer)
 
         // ╔════════════════════════════════════════════════════════════╗
         // ║  UTILITAIRES                                                ║
@@ -1333,8 +1493,9 @@
         // Détermine si la Taupe doit voir les bonus
         function shouldSeeBonusPlaces() {
             if (!viewedUser) return false;
+            if (viewedUser.role === "taupe" && isUnmasked(viewedUser.key)) return false;
             return (viewedUser.role === "taupe" || viewedUser.role === "admin")
-                   && bonusPlacesRevealed;
+                   && (bonusPlacesRevealed || (currentUser && currentUser.role === "admin" && adminForcedTaupeVision));
         }
 
         // Renvoie les lieux visibles pour l'utilisateur courant
@@ -1343,15 +1504,74 @@
             return shouldSeeBonusPlaces() ? [...main, ...getBonusPlaces()] : main;
         }
 
+        /**
+         * Détermine si un lieu doit apparaître "validé" (vert) pour l'utilisateur affiché.
+         * - Pour une Taupe (vue normale ou impersonation admin) : découverte MUTUALISÉE,
+         *   dès qu'UNE des 3 Taupes a validé le lieu, il apparaît vert pour toutes.
+         * - Pour un joueur classique : uniquement ses propres validations (chacun doit
+         *   trouver les lieux individuellement).
+         */
+        function isPlaceValidatedForViewer(placeId) {
+            if (viewedUser && viewedUser.role === "taupe") {
+                return getTaupeKeys().some(key => {
+                    const data = allPlayersData[key];
+                    return !!(data && data.validated && data.validated[placeId]);
+                });
+            }
+            return validatedPlaces.has(placeId);
+        }
+
+        // ╔════════════════════════════════════════════════════════════╗
+        // ║  ÉQUIPES / TAUPES / DÉMASQUAGE                              ║
+        // ╚════════════════════════════════════════════════════════════╝
+
+        // Renvoie les clés de toutes les Taupes de la partie
+        function getTaupeKeys() {
+            return Object.entries(PLAYERS_DATABASE)
+                .filter(([, info]) => info.role === "taupe")
+                .map(([key]) => key);
+        }
+
+        // Renvoie les coéquipiers (hors soi-même, hors admin) d'un joueur donné
+        function getTeammates(user) {
+            if (!user || user.role === "admin") return [];
+            return Object.entries(PLAYERS_DATABASE)
+                .filter(([key, info]) => info.team === user.team && key !== user.key)
+                .map(([key, info]) => ({ key, ...info }));
+        }
+
+        // Renvoie la clé de la Taupe d'une équipe donnée (ou null si l'équipe n'en a pas)
+        function getTaupeKeyOfTeam(teamNumber) {
+            const entry = Object.entries(PLAYERS_DATABASE)
+                .find(([, info]) => info.team === teamNumber && info.role === "taupe");
+            return entry ? entry[0] : null;
+        }
+
+        // Renvoie les clés des joueurs "classiques" (hors Taupe, hors admin) d'une équipe
+        function getTeamJoueurKeys(teamNumber) {
+            return Object.entries(PLAYERS_DATABASE)
+                .filter(([, info]) => info.team === teamNumber && info.role === "joueur")
+                .map(([key]) => key);
+        }
+
+        function isUnmasked(taupeKey) {
+            return !!unmaskedTaupes[taupeKey];
+        }
+
+        function prettyName(key) {
+            return key.charAt(0).toUpperCase() + key.slice(1);
+        }
+
         // ╔════════════════════════════════════════════════════════════╗
         // ║  CONNEXION                                                  ║
         // ╚════════════════════════════════════════════════════════════╝
         function handleLogin() {
             const firstnameRaw = document.getElementById("firstname").value.trim();
             const lastnameRaw = document.getElementById("lastname").value.trim();
+            const codeRaw = document.getElementById("secret-code").value.trim();
 
-            if (!firstnameRaw || !lastnameRaw) {
-                showToast("⚠️ Renseignez votre prénom et votre nom", "error");
+            if (!firstnameRaw || !lastnameRaw || !codeRaw) {
+                showToast("⚠️ Renseignez votre prénom, votre nom et votre code secret", "error");
                 return;
             }
 
@@ -1372,6 +1592,12 @@
                     showToast("❌ Accès admin refusé", "error");
                     return;
                 }
+            }
+
+            // Vérification du code secret à 4 chiffres
+            if (!playerData.code || codeRaw !== playerData.code) {
+                showToast("❌ Code secret incorrect", "error");
+                return;
             }
 
             currentUser = {
@@ -1419,10 +1645,19 @@
             powersUsedByMe = {};
             taupeModeActive = false;
             otherPlayersTrackingActive = false;
+            unmaskedTaupes = {};
+            votesData = {};
+            allPlayersData = {};
+            gameResult = null;
+            adminForcedTaupeVision = false;
+            taupeChatListenerAttached = false;
             stopPowersTicker();
             document.getElementById("taupe-modal").classList.remove("active");
             document.getElementById("power-banner").classList.remove("active");
             document.getElementById("power-banner").innerHTML = "";
+            document.getElementById("vote-modal") && document.getElementById("vote-modal").classList.remove("active");
+            document.getElementById("endgame-modal") && document.getElementById("endgame-modal").classList.remove("active");
+            document.getElementById("taupe-chat-modal") && document.getElementById("taupe-chat-modal").classList.remove("active");
 
             // Vide le localStorage
             localStorage.removeItem(GAME_CONFIG.storageKey);
@@ -1430,6 +1665,7 @@
             // Vide les inputs
             document.getElementById("firstname").value = "";
             document.getElementById("lastname").value = "";
+            document.getElementById("secret-code").value = "";
 
             // Bascule d'écran
             document.getElementById("app-screen").classList.remove("active");
@@ -1457,6 +1693,7 @@
             } else {
                 document.getElementById("admin-btn").style.display = "none";
             }
+            updateVoteButtonVisibility();
 
             // Charge les lieux validés depuis Firebase
             attachValidatedListener(viewedUser.key);
@@ -1483,6 +1720,18 @@
                 attachPowersUsedListener();
             }
             startPowersTicker();
+
+            // Démasquage : écoute l'état global des Taupes démasquées
+            attachUnmaskedListener();
+
+            // Vote : écoute les votes de l'équipe (si le joueur appartient à une équipe)
+            if (currentUser.role !== "admin") {
+                attachVotesListener();
+            }
+
+            // Conditions de victoire (tout le monde surveille /players en lecture pour détecter la fin)
+            attachWinConditionListener();
+            attachGameResultListener();
 
             // Surveille la connexion Firebase
             attachConnectionListener();
@@ -1572,6 +1821,22 @@
         }
 
         function updateScore() {
+            if (viewedUser && viewedUser.role === "taupe") {
+                // Score COMMUN des Taupes : tous les lieux (principaux + bonus), mutualisés
+                const allPlaceIds = PLACES.map(p => p.id);
+                const shared = new Set();
+                getTaupeKeys().forEach(key => {
+                    const data = allPlayersData[key];
+                    if (data && data.validated) {
+                        Object.keys(data.validated).forEach(id => {
+                            if (allPlaceIds.includes(id)) shared.add(id);
+                        });
+                    }
+                });
+                document.getElementById("score-count").textContent = shared.size;
+                document.getElementById("score-total").textContent = allPlaceIds.length;
+                return;
+            }
             // Compte uniquement les lieux MAIN validés (pas les bonus)
             const mainCount = [...validatedPlaces].filter(id => {
                 const place = getPlaceById(id);
@@ -1611,7 +1876,7 @@
             if (!map) return;
 
             // Nettoie les anciens marqueurs
-            Object.values(markers).forEach(m => map.removeLayer(m));
+            Object.values(markers).forEach(layerGroup => map.removeLayer(layerGroup));
             markers = {};
 
             // Ajoute uniquement les lieux visibles pour cet utilisateur
@@ -1619,7 +1884,7 @@
         }
 
         function addPlaceMarker(place) {
-            const isValidated = validatedPlaces.has(place.id);
+            const isValidated = isPlaceValidatedForViewer(place.id);
             let markerClass;
             if (isValidated) {
                 markerClass = "marker-validated";
@@ -1629,21 +1894,45 @@
                 markerClass = "marker-unvalidated";
             }
 
-            // Pouvoir Taupe "Brouiller" : ce point est affiché beaucoup plus gros
+            // Pouvoir Taupe "Brouiller" : le cercle de recherche double de diamètre (5 min)
             const isBlurred = isPowerActive("blur") && activePowers.blur.placeId === place.id;
             if (isBlurred) markerClass += " marker-blurred";
-            const size = isBlurred ? 90 : 36;
 
+            const baseRadius = place.radius || 2;
+            const zoneRadius = isBlurred ? baseRadius * 2 : baseRadius;
+
+            let circleColor;
+            if (isValidated) circleColor = "#00ff88";
+            else if (isBlurred) circleColor = "#ffb800";
+            else if (place.bonus) circleColor = "#ffd700";
+            else circleColor = "#ff3860";
+
+            // Cercle représentant la zone de recherche (et non un point précis)
+            const circle = L.circle([place.lat, place.lng], {
+                radius: zoneRadius,
+                color: circleColor,
+                weight: 2,
+                fillColor: circleColor,
+                fillOpacity: isBlurred ? 0.12 : 0.18,
+                className: isValidated ? "" : (place.bonus ? "zone-bonus" : "zone-unvalidated")
+            }).addTo(map);
+
+            // Icône centrale (emoji du lieu), taille fixe
+            const iconSize = 34;
             const customIcon = L.divIcon({
                 className: "custom-marker-wrapper",
                 html: `<div class="custom-marker ${markerClass}"><span class="marker-icon">${place.icon}</span></div>`,
-                iconSize: [size, size],
-                iconAnchor: [size / 2, size]
+                iconSize: [iconSize, iconSize],
+                iconAnchor: [iconSize / 2, iconSize / 2]
             });
+            const centerMarker = L.marker([place.lat, place.lng], { icon: customIcon }).addTo(map);
 
-            const marker = L.marker([place.lat, place.lng], { icon: customIcon }).addTo(map);
-            marker.on("click", () => openCodeModal(place.id));
-            markers[place.id] = marker;
+            const layersToAdd = [circle, centerMarker];
+            const openModal = () => openCodeModal(place.id);
+            layersToAdd.forEach(layer => layer.on("click", openModal));
+
+            const group = L.layerGroup(layersToAdd);
+            markers[place.id] = group;
         }
 
         // ╔════════════════════════════════════════════════════════════╗
@@ -1720,28 +2009,39 @@
         }
 
         /**
+        /**
          * Écoute les positions des autres joueurs.
-         * - L'admin les voit toujours.
-         * - Une Taupe les voit uniquement pendant que son pouvoir "Repérer" est actif
-         *   ET que le mode Taupe (secouage) est ouvert.
+         * - L'admin les voit toujours (tous les joueurs).
+         * - Une Taupe (non démasquée) voit EN PERMANENCE les 2 AUTRES TAUPES
+         *   (ce n'est pas un pouvoir à activer, c'est automatique).
          */
         function attachOtherPlayersListener() {
-            const allowed = currentUser.role === "admin" ||
-                (currentUser.role === "taupe" && isPowerActive("track") && taupeModeActive);
+            const isTrackingTaupe = currentUser.role === "taupe" && !isUnmasked(currentUser.key);
+            const allowed = currentUser.role === "admin" || isTrackingTaupe;
             if (!allowed) return;
 
             const ref = db.ref("players");
             const cb = snapshot => {
                 const players = snapshot.val() || {};
-                updateOtherPlayersOnMap(players);
+                let visiblePlayers = players;
+                if (isTrackingTaupe) {
+                    // Ne garde que les positions des AUTRES Taupes
+                    const taupeKeys = new Set(getTaupeKeys());
+                    visiblePlayers = {};
+                    Object.entries(players).forEach(([key, data]) => {
+                        if (taupeKeys.has(key) && key !== currentUser.key) {
+                            visiblePlayers[key] = data;
+                        }
+                    });
+                }
+                updateOtherPlayersOnMap(visiblePlayers);
             };
             ref.on("value", cb);
             firebaseListeners.push({ ref, event: "value", cb, tag: "otherPlayers" });
         }
 
         /**
-         * Coupe le suivi des autres joueurs (utilisé quand le pouvoir Taupe expire
-         * ou que le mode Taupe se referme)
+         * Coupe le suivi des autres joueurs (utilisé si le rôle change, ex: démasquage)
          */
         function detachOtherPlayersListener() {
             firebaseListeners = firebaseListeners.filter(l => {
@@ -1756,12 +2056,12 @@
         }
 
         /**
-         * Active/désactive le suivi des autres joueurs selon le rôle et l'état des pouvoirs
+         * Active/désactive le suivi des autres joueurs selon le rôle (admin ou Taupe non démasquée)
          */
         function updateTrackingState() {
             if (!currentUser) return;
             const shouldTrack = currentUser.role === "admin" ||
-                (currentUser.role === "taupe" && isPowerActive("track") && taupeModeActive);
+                (currentUser.role === "taupe" && !isUnmasked(currentUser.key));
 
             if (shouldTrack && !otherPlayersTrackingActive) {
                 otherPlayersTrackingActive = true;
@@ -1860,10 +2160,17 @@
         }
 
         function onShakeDetected() {
+            // Une Taupe démasquée ne peut plus secouer pour révéler les lieux secrets
+            if (currentUser.role === "taupe" && isUnmasked(currentUser.key)) {
+                showToast("🚫 Tu as été démasquée, tu ne vois plus que les lieux classiques", "error");
+                return;
+            }
+
             taupeModeActive = !taupeModeActive;
             bonusPlacesRevealed = taupeModeActive;
             refreshAllMarkers();
             updateTrackingState();
+            updateVoteButtonVisibility();
 
             if (taupeModeActive) {
                 showToast("🤫 Lieux secrets révélés ! Secouez à nouveau pour masquer.", "bonus");
@@ -1877,6 +2184,248 @@
         }
 
         // ╔════════════════════════════════════════════════════════════╗
+        // ║  VOTE & DÉMASQUAGE DES TAUPES                               ║
+        // ║  ─────────────────────────────────────────────              ║
+        // ║  Chaque joueur peut voter un membre de son équipe qu'il      ║
+        // ║  pense être la Taupe. Si au moins 2 joueurs NON-Taupe        ║
+        // ║  votent pour la bonne Taupe, elle est démasquée : elle ne    ║
+        // ║  peut plus secouer son téléphone (perd tous ses pouvoirs).   ║
+        // ╚════════════════════════════════════════════════════════════╝
+
+        /**
+         * Écoute l'état global des Taupes démasquées
+         */
+        function attachUnmaskedListener() {
+            const ref = db.ref("unmasked");
+            const cb = snapshot => {
+                unmaskedTaupes = snapshot.val() || {};
+                updateVoteButtonVisibility();
+                updateTrackingState();
+                // Si JE suis la Taupe et que je viens d'être démasquée, on ferme tout de suite mes pouvoirs
+                if (currentUser && currentUser.role === "taupe" && isUnmasked(currentUser.key)) {
+                    if (taupeModeActive) {
+                        taupeModeActive = false;
+                        bonusPlacesRevealed = false;
+                        refreshAllMarkers();
+                        closeTaupeModal();
+                    }
+                }
+                // Si les 3 Taupes sont démasquées, la partie s'arrête pour elles
+                const unmaskedCount = getTaupeKeys().filter(isUnmasked).length;
+                if (unmaskedCount >= GAME_CONFIG.totalTaupes) {
+                    claimGameResult({
+                        type: "taupes-lost",
+                        winners: [],
+                        teamNumber: null
+                    });
+                }
+            };
+            ref.on("value", cb);
+            firebaseListeners.push({ ref, event: "value", cb });
+        }
+
+        /**
+         * Écoute les votes de l'équipe du joueur courant
+         */
+        function attachVotesListener() {
+            if (!currentUser || currentUser.team === 0) return;
+            const ref = db.ref(`votes/${currentUser.team}`);
+            const cb = snapshot => {
+                votesData = snapshot.val() || {};
+                updateVoteButtonVisibility();
+                evaluateUnmaskForTeam(currentUser.team);
+            };
+            ref.on("value", cb);
+            firebaseListeners.push({ ref, event: "value", cb });
+        }
+
+        /**
+         * Affiche/masque et configure le bouton HUD en haut à droite :
+         * - Masqué pour l'admin
+         * - "🗳️ Voter" en temps normal (pour tous les autres, Taupes incluses)
+         * - "💬 Chat" pour une Taupe en Mode Taupe (après secouage) : accès au chat commun des Taupes
+         */
+        function updateVoteButtonVisibility() {
+            const btn = document.getElementById("vote-btn");
+            if (!btn || !currentUser) return;
+
+            if (currentUser.role === "admin") {
+                btn.style.display = "none";
+                return;
+            }
+            btn.style.display = "flex";
+
+            const inTaupeChatMode = currentUser.role === "taupe" && taupeModeActive && !isUnmasked(currentUser.key);
+            if (inTaupeChatMode) {
+                btn.textContent = "💬";
+                btn.title = "Chat des Taupes";
+            } else {
+                btn.textContent = "🗳️";
+                btn.title = "Voter contre un suspect";
+            }
+        }
+
+        /**
+         * Vérifie si la Taupe d'une équipe doit être démasquée suite aux votes
+         */
+        function evaluateUnmaskForTeam(teamNumber) {
+            const taupeKey = getTaupeKeyOfTeam(teamNumber);
+            if (!taupeKey || isUnmasked(taupeKey)) return;
+
+            const votesForThisTeam = votesData || {};
+            const correctVotes = Object.entries(votesForThisTeam)
+                .filter(([voterKey, targetKey]) => voterKey !== taupeKey && targetKey === taupeKey);
+
+            if (correctVotes.length >= GAME_CONFIG.votesNeededToUnmask) {
+                // Transaction pour éviter les écritures concurrentes multiples
+                db.ref(`unmasked/${taupeKey}`).transaction(current => current === true ? current : true)
+                    .then(result => {
+                        if (result.committed) {
+                            showToast(`🕵️ La Taupe de l'équipe ${teamNumber} a été démasquée !`, "bonus");
+                        }
+                    });
+            }
+        }
+
+        /**
+         * Ouvre le panneau de vote pour désigner un coéquipier suspecté d'être la Taupe
+         */
+        function openVoteModal() {
+            if (!currentUser || currentUser.role === "admin") return;
+            const teammates = getTeammates(currentUser);
+            const list = document.getElementById("vote-list");
+            const myVote = votesData[currentUser.key];
+
+            if (myVote) {
+                // Vote déjà posé : définitif, on ne peut plus le changer
+                list.innerHTML = `
+                    <div class="taupe-power-btn used" style="cursor:default;">
+                        <span class="power-icon">✅</span>
+                        <span class="power-text">
+                            Vote enregistré pour ${prettyName(myVote)}
+                            <span class="power-desc">Ton vote est définitif, tu ne peux voter qu'une seule fois par partie.</span>
+                        </span>
+                    </div>
+                `;
+            } else if (teammates.length === 0) {
+                list.innerHTML = `<p style="color:var(--text-secondary);font-size:13px;">Ton équipe n'a pas d'autres membres.</p>`;
+            } else {
+                list.innerHTML = teammates.map(t => `
+                    <button class="taupe-power-btn" data-target="${t.key}">
+                        <span class="power-icon">🤔</span>
+                        <span class="power-text">
+                            ${prettyName(t.key)}
+                            <span class="power-desc">Voter comme suspect·e (définitif)</span>
+                        </span>
+                    </button>
+                `).join("");
+                list.querySelectorAll(".taupe-power-btn").forEach(btn => {
+                    btn.addEventListener("click", () => submitVote(btn.dataset.target));
+                });
+            }
+
+            document.getElementById("vote-modal").classList.add("active");
+        }
+
+        function closeVoteModal() {
+            document.getElementById("vote-modal").classList.remove("active");
+        }
+
+        function submitVote(targetKey) {
+            if (!currentUser) return;
+            const voteRef = db.ref(`votes/${currentUser.team}/${currentUser.key}`);
+            // Transaction : n'écrit que si aucun vote n'existe déjà (un seul vote par partie)
+            voteRef.transaction(current => {
+                if (current) return current;
+                return targetKey;
+            }).then(result => {
+                const finalVote = result.snapshot.val();
+                if (result.committed && finalVote === targetKey) {
+                    showToast(`🗳️ Vote enregistré pour ${prettyName(targetKey)}`, "success");
+                } else {
+                    showToast(`⚠️ Tu as déjà voté pour ${prettyName(finalVote)}, ton vote est définitif`, "error");
+                }
+                closeVoteModal();
+            }).catch(err => {
+                showToast("❌ Erreur : " + err.message, "error");
+            });
+        }
+
+        // ╔════════════════════════════════════════════════════════════╗
+        // ║  CHAT COMMUN DES TAUPES                                     ║
+        // ║  ─────────────────────────────────────────────              ║
+        // ║  Visible uniquement en Mode Taupe (après secouage). Permet  ║
+        // ║  aux 3 Taupes de communiquer entre elles en direct.          ║
+        // ╚════════════════════════════════════════════════════════════╝
+
+        let taupeChatListenerAttached = false;
+
+        function attachTaupeChatListener() {
+            if (taupeChatListenerAttached) return;
+            taupeChatListenerAttached = true;
+
+            const ref = db.ref("taupeChat").limitToLast(200);
+            const cb = snapshot => {
+                const messages = [];
+                snapshot.forEach(child => {
+                    messages.push(child.val());
+                });
+                renderTaupeChatMessages(messages);
+            };
+            ref.on("value", cb);
+            firebaseListeners.push({ ref, event: "value", cb });
+        }
+
+        function renderTaupeChatMessages(messages) {
+            const container = document.getElementById("taupe-chat-messages");
+            if (!container) return;
+
+            if (messages.length === 0) {
+                container.innerHTML = `<p style="color:var(--text-secondary);font-size:13px;text-align:center;">Aucun message pour l'instant. Sois la première à écrire !</p>`;
+            } else {
+                container.innerHTML = messages.map(m => `
+                    <div class="taupe-chat-msg">
+                        <div class="sender">🕵️ ${m.sender || "Taupe"}</div>
+                        <div class="text">${(m.text || "").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+                    </div>
+                `).join("");
+            }
+
+            // Scroll automatique vers le dernier message
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function openTaupeChatModal() {
+            if (!currentUser || currentUser.role !== "taupe" || isUnmasked(currentUser.key)) return;
+            attachTaupeChatListener();
+            document.getElementById("taupe-chat-modal").classList.add("active");
+            setTimeout(() => document.getElementById("taupe-chat-input").focus(), 300);
+        }
+
+        function closeTaupeChatModal() {
+            document.getElementById("taupe-chat-modal").classList.remove("active");
+        }
+
+        function sendTaupeChatMessage() {
+            if (!currentUser || currentUser.role !== "taupe") return;
+            const input = document.getElementById("taupe-chat-input");
+            const text = input.value.trim();
+            if (!text) return;
+
+            db.ref("taupeChat").push({
+                sender: currentUser.firstname,
+                senderKey: currentUser.key,
+                text,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                input.value = "";
+            }).catch(err => {
+                showToast("❌ Erreur : " + err.message, "error");
+            });
+        }
+
+
+        // ╔════════════════════════════════════════════════════════════╗
         // ║  MODAL DE VALIDATION DE CODE                                ║
         // ╚════════════════════════════════════════════════════════════╝
         function openCodeModal(placeId) {
@@ -1886,7 +2435,12 @@
             activePlaceId = placeId;
 
             document.getElementById("modal-title").textContent = `${place.icon} ${place.name}`;
-            document.getElementById("modal-place-info").textContent = place.hint;
+            const isBlurredPlace = isPowerActive("blur") && activePowers.blur.placeId === place.id;
+            const zoneRadius = place.radius || 2;
+            const zoneNote = isBlurredPlace
+                ? `🌫️ Zone brouillée par une Taupe : diamètre doublé, environ ${zoneRadius * 4} m.`
+                : `🔵 Zone de recherche d'environ ${zoneRadius * 2} m de diamètre.`;
+            document.getElementById("modal-place-info").textContent = `${place.hint}\n${zoneNote}`;
 
             const input = document.getElementById("code-input");
             input.value = "";
@@ -1976,19 +2530,13 @@
                 type: "block",
                 icon: "🔒",
                 title: "Bloquer les codes",
-                desc: "Empêche TOUT LE MONDE de valider un code pendant 5 min. Visible de tous."
+                desc: "Empêche TOUT LE MONDE de valider un code pendant 3 min. Visible de tous."
             },
             {
                 type: "blur",
                 icon: "🌫️",
                 title: "Brouiller un point",
-                desc: "Agrandit un point sur la carte pendant 5 min pour brouiller sa position exacte. Visible de tous."
-            },
-            {
-                type: "track",
-                icon: "📍",
-                title: "Repérer les joueurs",
-                desc: "Affiche ici la position de tous les joueurs (géoloc activée) pendant 15 min. Visible des Taupes uniquement."
+                desc: "Double le diamètre de la zone de recherche d'un point pendant 5 min (environ 4 m → 8 m). Visible de tous."
             }
         ];
 
@@ -2042,9 +2590,6 @@
             powersTickInterval = setInterval(() => {
                 renderPowerBanner();
                 updateTrackingState();
-                if (document.getElementById("taupe-modal").classList.contains("active")) {
-                    renderTaupeTrackStatus();
-                }
             }, 1000);
         }
 
@@ -2072,8 +2617,13 @@
                 html += `<div class="power-pill blur">🌫️ ${place ? place.name : "Un point"} brouillé — ⏳ ${formatDuration(activePowers.blur.until - now)}</div>`;
             }
 
+            // Compteur permanent de Taupes démasquées (visible de tous, s'agrandit au fil de la partie)
+            const unmaskedCount = getTaupeKeys().filter(isUnmasked).length;
+            const counterScale = 1 + (unmaskedCount * 0.12);
+            html += `<div class="power-pill" style="color:var(--text-primary);border-color:var(--gold);transform:scale(${counterScale});">🕵️ Taupes démasquées — ${unmaskedCount}/${GAME_CONFIG.totalTaupes}</div>`;
+
             banner.innerHTML = html;
-            banner.classList.toggle("active", html !== "");
+            banner.classList.add("active");
         }
 
         /**
@@ -2081,8 +2631,13 @@
          * si plusieurs Taupes activent le même pouvoir simultanément.
          */
         function activatePower(type, extra) {
-            if (!currentUser || currentUser.role !== "taupe") return;
-            if (powersUsedByMe[type]) {
+            const isAdminTesting = currentUser && currentUser.role === "admin" && adminForcedTaupeVision;
+            if (!currentUser || (currentUser.role !== "taupe" && !isAdminTesting)) return;
+            if (!isAdminTesting && isUnmasked(currentUser.key)) {
+                showToast("🚫 Tu as été démasquée, tu ne peux plus utiliser de pouvoirs", "error");
+                return;
+            }
+            if (!isAdminTesting && powersUsedByMe[type]) {
                 showToast("⚠️ Tu as déjà utilisé ce pouvoir", "error");
                 return;
             }
@@ -2096,11 +2651,14 @@
                 return type === "blur" ? { placeId: extra, until: newUntil } : { until: newUntil };
             }).then(result => {
                 if (!result.committed) return;
-                db.ref(`players/${currentUser.key}/powersUsed/${type}`).set(true);
+                if (!isAdminTesting) {
+                    db.ref(`players/${currentUser.key}/powersUsed/${type}`).set(true);
+                } else {
+                    showToast("ℹ️ Test admin : pouvoir réellement activé pour tout le monde", "bonus");
+                }
                 const labels = {
                     block: "🔒 Blocage des codes activé !",
-                    blur: "🌫️ Point brouillé !",
-                    track: "📍 Repérage des joueurs activé !"
+                    blur: "🌫️ Point brouillé !"
                 };
                 showToast(labels[type] || "✅ Pouvoir activé", "success");
                 document.getElementById("taupe-blur-picker").style.display = "none";
@@ -2125,7 +2683,6 @@
 
         function renderTaupePanel() {
             renderTaupePowersList();
-            renderTaupeTrackStatus();
         }
 
         function renderTaupePowersList() {
@@ -2169,20 +2726,6 @@
             picker.style.display = "block";
         }
 
-        /**
-         * Sablier "Repérage des joueurs" : visible des Taupes uniquement, dans leur panneau
-         */
-        function renderTaupeTrackStatus() {
-            const el = document.getElementById("taupe-track-status");
-            if (!el) return;
-            if (isPowerActive("track")) {
-                el.textContent = `📍 Repérage des joueurs actif — ⏳ ${formatDuration(activePowers.track.until - Date.now())}`;
-                el.style.display = "block";
-            } else {
-                el.style.display = "none";
-            }
-        }
-
         // ╔════════════════════════════════════════════════════════════╗
         // ║  ESPACE ADMIN                                               ║
         // ╚════════════════════════════════════════════════════════════╝
@@ -2211,10 +2754,20 @@
         function renderDashboard(players) {
             const container = document.getElementById("dashboard-content");
 
-            // Regroupe les joueurs par équipe
+            let html = "";
+            if (gameResult) {
+                let label = "Partie terminée";
+                if (gameResult.type === "team-win") label = `🏆 Équipe ${gameResult.teamNumber} a gagné (${gameResult.winners.join(", ")})`;
+                else if (gameResult.type === "taupe-win") label = `🕵️ Les Taupes ont gagné (${gameResult.winners.join(", ")})`;
+                else if (gameResult.type === "taupes-lost") label = "🕵️❌ Les Taupes ont été démasquées et ont perdu";
+                html += `<div class="taupe-track-status" style="display:block;margin-bottom:16px;">${label}</div>`;
+            }
+
+            // Regroupe les joueurs "classiques" (hors Taupe, hors admin) par équipe
+            // → leurs points ne comptent PAS pour la Taupe de l'équipe
             const teams = {};
             Object.entries(PLAYERS_DATABASE).forEach(([key, info]) => {
-                if (info.role === "admin") return;
+                if (info.role !== "joueur") return;
                 if (!teams[info.team]) teams[info.team] = [];
                 const fbData = players[key] || {};
                 const validatedCount = fbData.validated
@@ -2226,15 +2779,13 @@
                 teams[info.team].push({
                     key,
                     firstname: key.charAt(0).toUpperCase() + key.slice(1),
-                    role: info.role,
                     score: validatedCount,
                     total: getMainPlaces().length
                 });
             });
 
-            // Génère le HTML
-            let html = "";
-            Object.keys(teams).sort().forEach(teamNum => {
+            // Génère le HTML des équipes classiques
+            Object.keys(teams).sort((a, b) => a - b).forEach(teamNum => {
                 const teamScore = teams[teamNum].reduce((acc, p) => acc + p.score, 0);
                 const teamTotal = teams[teamNum].reduce((acc, p) => acc + p.total, 0);
                 html += `
@@ -2246,17 +2797,49 @@
                 `;
                 teams[teamNum].forEach(p => {
                     const scoreClass = p.score === 0 ? "zero" : "";
-                    // Les Taupes sont visibles uniquement à l'admin
-                    const taupeIcon = p.role === "taupe" ? " 🕵️" : "";
                     html += `
                         <div class="player-row">
-                            <div class="player-row-name">${p.firstname}${taupeIcon}</div>
+                            <div class="player-row-name">${p.firstname}</div>
                             <div class="player-row-score ${scoreClass}">${p.score}/${p.total}</div>
                         </div>
                     `;
                 });
                 html += `</div>`;
             });
+
+            // 5ᵉ bloc : les Taupes, avec un score COMMUN (découverte mutualisée sur 9 lieux)
+            const taupeKeys = getTaupeKeys();
+            const allPlaceIds = PLACES.map(p => p.id);
+            const taupeSharedValidated = new Set();
+            taupeKeys.forEach(key => {
+                const fbData = players[key] || {};
+                if (fbData.validated) {
+                    Object.keys(fbData.validated).forEach(id => {
+                        if (allPlaceIds.includes(id)) taupeSharedValidated.add(id);
+                    });
+                }
+            });
+            const taupeSharedScore = taupeSharedValidated.size;
+            const taupeSharedTotal = allPlaceIds.length;
+
+            html += `
+                <div class="team-block">
+                    <div class="team-header">
+                        <div class="team-name">🕵️ Équipe Taupes</div>
+                        <div class="team-score">${taupeSharedScore}/${taupeSharedTotal} pts (communs)</div>
+                    </div>
+            `;
+            taupeKeys.forEach(key => {
+                const firstname = key.charAt(0).toUpperCase() + key.slice(1);
+                const unmaskedTag = isUnmasked(key) ? " ❌ (démasquée)" : "";
+                html += `
+                    <div class="player-row">
+                        <div class="player-row-name">${firstname}${unmaskedTag}</div>
+                        <div class="player-row-score ${taupeSharedScore === 0 ? "zero" : ""}">${taupeSharedScore}/${taupeSharedTotal}</div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
 
             container.innerHTML = html || '<p style="color:var(--text-secondary);">Aucun joueur enregistré pour l\'instant.</p>';
         }
@@ -2367,9 +2950,17 @@
                 return;
             }
 
-            db.ref("players").remove().then(() => {
+            Promise.all([
+                db.ref("players").remove(),
+                db.ref("votes").remove(),
+                db.ref("unmasked").remove(),
+                db.ref("gameResult").remove(),
+                db.ref("powers").remove(),
+                db.ref("taupeChat").remove()
+            ]).then(() => {
                 showToast("🔄 Partie réinitialisée !", "success");
                 closeAdminModal();
+                document.getElementById("endgame-modal").classList.remove("active");
                 // Recrée le nœud admin pour ne pas la perdre
                 if (currentUser.role === "admin") {
                     registerPlayerInFirebase(currentUser);
@@ -2379,13 +2970,193 @@
             });
         }
 
+        /**
+         * Active/désactive manuellement la vision Taupe pour l'admin
+         * (test des pouvoirs sans avoir à secouer le téléphone)
+         */
+        function toggleAdminTaupeVision() {
+            if (!currentUser || currentUser.role !== "admin") return;
+            adminForcedTaupeVision = !adminForcedTaupeVision;
+            bonusPlacesRevealed = adminForcedTaupeVision;
+            taupeModeActive = adminForcedTaupeVision;
+            refreshAllMarkers();
+            updateTrackingState();
+
+            const btn = document.getElementById("admin-taupe-vision-btn");
+            if (btn) {
+                btn.textContent = adminForcedTaupeVision
+                    ? "🙈 Désactiver la vision Taupe"
+                    : "🕵️ Activer la vision Taupe (sans secouer)";
+            }
+
+            if (adminForcedTaupeVision) {
+                showToast("🕵️ Vision Taupe activée (test admin)", "bonus");
+                openTaupeModal();
+            } else {
+                showToast("✓ Vision Taupe désactivée", "success");
+                closeTaupeModal();
+            }
+        }
+
+        // ╔════════════════════════════════════════════════════════════╗
+        // ║  CONDITIONS DE VICTOIRE / DÉFAITE                           ║
+        // ║  ─────────────────────────────────────────────              ║
+        // ║  - Une équipe classique gagne si CHACUN de ses joueurs      ║
+        // ║    (hors Taupe) a individuellement validé les 6 lieux       ║
+        // ║    principaux. Équipe à 2 joueurs "classiques" → 12 pts.    ║
+        // ║    Équipe à 3 joueurs "classiques" (sans Taupe) → 18 pts.   ║
+        // ║  - Les Taupes gagnent si, à elles 3, elles ont validé les   ║
+        // ║    9 lieux (principaux + bonus) — découverte mutualisée.    ║
+        // ║  - Les Taupes perdent d'office si les 3 sont démasquées     ║
+        // ║    (géré dans attachUnmaskedListener).                      ║
+        // ╚════════════════════════════════════════════════════════════╝
+
+        function attachWinConditionListener() {
+            const ref = db.ref("players");
+            const cb = snapshot => {
+                allPlayersData = snapshot.val() || {};
+                checkWinConditions();
+                // Vue Taupe : la découverte est mutualisée, on rafraîchit la carte/le score
+                // dès qu'une des 3 Taupes valide un nouveau lieu.
+                if (viewedUser && viewedUser.role === "taupe") {
+                    updateScore();
+                    refreshAllMarkers();
+                }
+            };
+            ref.on("value", cb);
+            firebaseListeners.push({ ref, event: "value", cb });
+        }
+
+        function validatedPlaceIdsOf(key) {
+            const data = allPlayersData[key];
+            return data && data.validated ? Object.keys(data.validated) : [];
+        }
+
+        function checkWinConditions() {
+            if (gameResult) return; // déjà déterminé, inutile de recalculer
+
+            const mainPlaceIds = getMainPlaces().map(p => p.id);
+            const allPlaceIds = PLACES.map(p => p.id);
+
+            // 1) Équipes classiques : CHAQUE joueur "joueur" (hors Taupe) de l'équipe doit
+            //    avoir INDIVIDUELLEMENT validé les 6 lieux principaux (pas juste l'union
+            //    de l'équipe, sinon un seul joueur qui trouve les 6 ferait gagner tout le monde)
+            for (let teamNumber = 1; teamNumber <= 4; teamNumber++) {
+                const joueurKeys = getTeamJoueurKeys(teamNumber);
+                if (joueurKeys.length === 0) continue;
+
+                const allMembersComplete = joueurKeys.every(key => {
+                    const validatedMain = validatedPlaceIdsOf(key).filter(id => mainPlaceIds.includes(id));
+                    return validatedMain.length >= mainPlaceIds.length;
+                });
+
+                if (allMembersComplete) {
+                    claimGameResult({
+                        type: "team-win",
+                        winners: joueurKeys.map(prettyName),
+                        teamNumber
+                    });
+                    return;
+                }
+            }
+
+            // 2) Les Taupes : union des validations des 3 Taupes (principaux + bonus)
+            //    Si les 3 Taupes ont été démasquées, elles ne peuvent plus gagner.
+            const taupeKeys = getTaupeKeys();
+            const unmaskedCount = taupeKeys.filter(isUnmasked).length;
+            if (unmaskedCount >= GAME_CONFIG.totalTaupes) return;
+
+            const taupeValidated = new Set();
+            taupeKeys.forEach(key => {
+                validatedPlaceIdsOf(key).forEach(id => {
+                    if (allPlaceIds.includes(id)) taupeValidated.add(id);
+                });
+            });
+
+            if (taupeValidated.size >= allPlaceIds.length) {
+                claimGameResult({
+                    type: "taupe-win",
+                    winners: taupeKeys.map(prettyName),
+                    teamNumber: null
+                });
+            }
+        }
+
+        /**
+         * Tente d'enregistrer le résultat final de la partie dans Firebase.
+         * Une transaction garantit qu'un seul résultat est retenu (le premier).
+         */
+        function claimGameResult(result) {
+            db.ref("gameResult").transaction(current => {
+                if (current) return current; // déjà un résultat, on ne l'écrase pas
+                return { ...result, timestamp: Date.now() };
+            });
+        }
+
+        function attachGameResultListener() {
+            const ref = db.ref("gameResult");
+            const cb = snapshot => {
+                const result = snapshot.val();
+                if (result && !gameResult) {
+                    gameResult = result;
+                    showGameResultModal(result);
+                } else if (!result) {
+                    gameResult = null;
+                }
+            };
+            ref.on("value", cb);
+            firebaseListeners.push({ ref, event: "value", cb });
+        }
+
+        function showGameResultModal(result) {
+            const modal = document.getElementById("endgame-modal");
+            const titleEl = document.getElementById("endgame-title");
+            const bodyEl = document.getElementById("endgame-body");
+
+            const iAmAdmin = currentUser && currentUser.role === "admin";
+            let iAmWinner = false;
+            let winningLabel = "";
+
+            if (result.type === "team-win") {
+                winningLabel = `l'Équipe ${result.teamNumber}`;
+                iAmWinner = !iAmAdmin && currentUser.team === result.teamNumber && currentUser.role === "joueur";
+            } else if (result.type === "taupe-win") {
+                winningLabel = "les Taupes";
+                iAmWinner = !iAmAdmin && currentUser.role === "taupe";
+            } else if (result.type === "taupes-lost") {
+                winningLabel = "";
+            }
+
+            if (result.type === "taupes-lost") {
+                titleEl.textContent = "🕵️ Les Taupes sont démasquées !";
+                bodyEl.innerHTML = `
+                    <p>Les 3 Taupes ont été démasquées par leurs équipes.</p>
+                    <p style="margin-top:10px;font-weight:700;color:var(--danger);">Les Taupes ont perdu la partie d'office.</p>
+                `;
+            } else if (iAmWinner) {
+                titleEl.textContent = "🎉 Victoire !";
+                bodyEl.innerHTML = `
+                    <p>Bravo à <strong>${result.winners.join(", ")}</strong> !</p>
+                    <p style="margin-top:10px;">${result.type === "taupe-win" ? "Les Taupes ont" : `${winningLabel} a`} trouvé tous les lieux et remporte${result.type === "taupe-win" ? "nt" : ""} la partie 🏆</p>
+                `;
+            } else {
+                titleEl.textContent = "😢 Partie terminée";
+                bodyEl.innerHTML = `
+                    <p>Vous avez perdu.</p>
+                    <p style="margin-top:10px;">${winningLabel.charAt(0).toUpperCase() + winningLabel.slice(1)} a gagné la partie, avec <strong>${result.winners.join(", ")}</strong> 🏆</p>
+                `;
+            }
+
+            modal.classList.add("active");
+        }
+
         // ╔════════════════════════════════════════════════════════════╗
         // ║  ÉVÉNEMENTS                                                 ║
         // ╚════════════════════════════════════════════════════════════╝
         function setupEventListeners() {
             // Login
             document.getElementById("login-btn").addEventListener("click", handleLogin);
-            ["firstname", "lastname"].forEach(id => {
+            ["firstname", "lastname", "secret-code"].forEach(id => {
                 document.getElementById(id).addEventListener("keypress", e => {
                     if (e.key === "Enter") handleLogin();
                 });
@@ -2409,6 +3180,37 @@
             document.getElementById("admin-close").addEventListener("click", closeAdminModal);
             document.getElementById("reset-game-btn").addEventListener("click", resetGame);
             document.getElementById("impersonate-exit").addEventListener("click", exitImpersonate);
+            document.getElementById("admin-taupe-vision-btn").addEventListener("click", toggleAdminTaupeVision);
+
+            // Vote (démasquage)
+            document.getElementById("vote-btn").addEventListener("click", () => {
+                const inTaupeChatMode = currentUser && currentUser.role === "taupe" &&
+                    taupeModeActive && !isUnmasked(currentUser.key);
+                if (inTaupeChatMode) {
+                    openTaupeChatModal();
+                } else {
+                    openVoteModal();
+                }
+            });
+            document.getElementById("vote-close").addEventListener("click", closeVoteModal);
+            document.getElementById("vote-modal").addEventListener("click", e => {
+                if (e.target.id === "vote-modal") closeVoteModal();
+            });
+
+            // Chat des Taupes
+            document.getElementById("taupe-chat-close").addEventListener("click", closeTaupeChatModal);
+            document.getElementById("taupe-chat-modal").addEventListener("click", e => {
+                if (e.target.id === "taupe-chat-modal") closeTaupeChatModal();
+            });
+            document.getElementById("taupe-chat-send").addEventListener("click", sendTaupeChatMessage);
+            document.getElementById("taupe-chat-input").addEventListener("keypress", e => {
+                if (e.key === "Enter") sendTaupeChatMessage();
+            });
+
+            // Fin de partie
+            document.getElementById("endgame-close").addEventListener("click", () => {
+                document.getElementById("endgame-modal").classList.remove("active");
+            });
 
             // Mode Taupe (pouvoirs)
             document.getElementById("taupe-close").addEventListener("click", closeTaupeModal);
