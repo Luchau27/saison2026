@@ -1521,9 +1521,10 @@
         }
 
         // Renvoie les lieux visibles pour l'utilisateur courant
+        // - Vision Taupe active : UNIQUEMENT les points spéciaux Taupe (pas les classiques)
+        // - Vue classique : UNIQUEMENT les points classiques
         function getVisiblePlaces() {
-            const main = getMainPlaces();
-            return shouldSeeBonusPlaces() ? [...main, ...getBonusPlaces()] : main;
+            return shouldSeeBonusPlaces() ? getBonusPlaces() : getMainPlaces();
         }
 
         /**
